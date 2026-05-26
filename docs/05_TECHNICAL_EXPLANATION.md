@@ -1,4 +1,4 @@
-# Technical Explanation
+# 05 - Technical Explanation
 
 ## Language and Approach
 
@@ -91,4 +91,3 @@ A leecher is a peer that still needs chunks. It:
 - Partial progress is saved in a sidecar `.progress.json` file.
 - Peer entries expire from the tracker after a timeout.
 - Failed peer requests are skipped so the leecher can try another peer.
-

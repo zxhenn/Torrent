@@ -88,8 +88,9 @@ Add `--exit-when-done` if you want the leecher to stop after the download instea
 
 ## Documentation
 
-- `docs/PROJECT_PLAN.md` - what we will do, what is done, and what should be done next
-- `docs/TECHNICAL_EXPLANATION.md` - technical details of hashing, chunking, tracker, seeder, and leecher
-- `docs/SYSTEM_WORKFLOW.md` - command workflow for demo and LAN testing
-- `docs/HOW_THE_SYSTEM_WORKS.md` - descriptive explanation of the whole system
-- `docs/CODE_REFERENCE.md` - file-by-file and function-by-function explanation
+- `docs/01_PROJECT_PLAN.md` - what we will do, what is done, and what should be done next
+- `docs/02_IMPLEMENTATION_TASKS.md` - checklist of implemented and pending tasks
+- `docs/03_HOW_THE_SYSTEM_WORKS.md` - descriptive explanation of the whole system
+- `docs/04_SYSTEM_WORKFLOW.md` - command workflow for demo and LAN testing
+- `docs/05_TECHNICAL_EXPLANATION.md` - technical details of hashing, chunking, tracker, seeder, and leecher
+- `docs/06_CODE_REFERENCE.md` - file-by-file and function-by-function explanation

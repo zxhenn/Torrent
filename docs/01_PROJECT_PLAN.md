@@ -1,4 +1,4 @@
-# Project Plan
+# 01 - Project Plan
 
 This project is a small torrent-like distributed file sharing system. It is not a full BitTorrent client. The goal is to show the basic distributed computing ideas clearly:
 
@@ -46,6 +46,7 @@ This project is a small torrent-like distributed file sharing system. It is not 
 
 ## What We Should Do Next
 
+- Use `docs/02_IMPLEMENTATION_TASKS.md` as the main team checklist.
 - Add screenshots or terminal logs for the final report.
 - Add a small sample file in `sample_files/`.
 - Test on two different laptops in the same network.

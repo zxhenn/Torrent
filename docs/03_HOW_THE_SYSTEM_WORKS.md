@@ -1,4 +1,4 @@
-# How The System Works
+# 03 - How The System Works
 
 Imagine the shared file is too large to send as one piece. The system cuts it into smaller chunks. Each chunk gets its own fingerprint using SHA-256 hashing.
 
@@ -38,4 +38,3 @@ This is the basic idea behind torrent-style sharing:
 - Peers discover each other through a tracker.
 - Peers exchange chunks directly.
 - Downloaders can become uploaders.
-

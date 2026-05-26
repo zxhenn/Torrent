@@ -1,4 +1,4 @@
-# Code Reference
+# 06 - Code Reference
 
 This document follows the requested format:
 
@@ -1295,7 +1295,7 @@ Block of code:
 
 Explanation: This prebuilt metadata uses a small chunk size so the sample file splits into multiple chunks for demonstration.
 
-### Directory/File: `docs/PROJECT_PLAN.md`
+### Directory/File: `docs/01_PROJECT_PLAN.md`
 
 Function: project status document.
 
@@ -1311,7 +1311,22 @@ What We Should Do Next
 
 Explanation: This helps teammates quickly understand project progress.
 
-### Directory/File: `docs/TECHNICAL_EXPLANATION.md`
+### Directory/File: `docs/02_IMPLEMENTATION_TASKS.md`
+
+Function: implementation checklist.
+
+Description: Tracks finished and pending tasks using checkboxes.
+
+Block of code:
+
+```text
+- [x] Implemented task
+- [ ] Pending task
+```
+
+Explanation: This helps the team see what is already done and what can be improved next.
+
+### Directory/File: `docs/05_TECHNICAL_EXPLANATION.md`
 
 Function: technical notes.
 
@@ -1329,7 +1344,7 @@ Leecher
 
 Explanation: This is useful for reports or defense questions.
 
-### Directory/File: `docs/SYSTEM_WORKFLOW.md`
+### Directory/File: `docs/04_SYSTEM_WORKFLOW.md`
 
 Function: demo workflow.
 
@@ -1346,7 +1361,7 @@ leech
 
 Explanation: This is the hands-on guide for running the system.
 
-### Directory/File: `docs/HOW_THE_SYSTEM_WORKS.md`
+### Directory/File: `docs/03_HOW_THE_SYSTEM_WORKS.md`
 
 Function: descriptive explanation.
 
@@ -1360,7 +1375,7 @@ The tracker is like a directory.
 
 Explanation: This is helpful for non-code explanations in presentations.
 
-### Directory/File: `docs/CODE_REFERENCE.md`
+### Directory/File: `docs/06_CODE_REFERENCE.md`
 
 Function: code map.
 
