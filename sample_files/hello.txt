@@ -1,0 +1,2 @@
+Hello distributed computing.
+This sample file is used to test hashing, chunking, seeding, and leeching.
