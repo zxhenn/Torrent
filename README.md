@@ -1,6 +1,6 @@
-# Mini Torrent Distributed File Sharing Demo
+# ChunkShare Distributed File Sharing Demo
 
-This is a simple Python project that demonstrates torrent-like file sharing for a distributed computing class.
+ChunkShare is a simple Python project that demonstrates torrent-like file sharing for a distributed computing class.
 
 It supports:
 
@@ -9,6 +9,7 @@ It supports:
 - Seeding complete files
 - Leeching missing chunks
 - Peer discovery through a tracker
+- App-style dashboard with seed/leech controls
 - A leecher becoming a seeder after download
 
 It is intentionally not a full BitTorrent implementation. The goal is to make the main concepts easy to run, inspect, and explain.
@@ -16,49 +17,107 @@ It is intentionally not a full BitTorrent implementation. The goal is to make th
 ## Requirements
 
 - Python 3.10 or newer
-- No external packages
+- No external packages for normal Python runs
+- PyInstaller is installed automatically into `.venv` only when building the EXE
 
 ## Quick Start
 
 Open PowerShell in this project folder.
 
-### 1. Use the included sample file
+### App Dashboard
+
+Run the app:
+
+```powershell
+python app.py
+```
+
+Or run the built EXE:
+
+```text
+dist/ChunkShare/ChunkShare.exe
+```
+
+ChunkShare opens a dashboard in your browser immediately. From the dashboard, you can:
+
+- Create `.mtorrent` metadata
+- Start seeding a complete file
+- Start leeching/downloading a file
+- View active torrents, seeders, leechers, peers, and chunk availability
+
+On Windows, you can also double-click:
+
+```text
+start_app.bat
+```
+
+For a one-laptop demo, you can also run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_local_demo.ps1
+```
+
+### Build a Windows EXE
+
+If you want a Windows executable for demos, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_exe.ps1
+```
+
+This creates:
+
+```text
+dist/ChunkShare/ChunkShare.exe
+```
+
+The build script uses PyInstaller inside a local `.venv` folder.
+
+### 1. Use The Included Sample File
 
 The project already includes `sample_files/hello.txt` so the demo can run immediately.
 
-### 2. Create metadata
+### 2. Open The App
 
 ```powershell
-python -m mini_torrent.cli create-torrent sample_files/hello.txt
+python app.py
 ```
 
-### 3. Start tracker
+The dashboard opens before anything is seeded or downloaded.
 
-Terminal 1:
+### 3. Seed From The Dashboard
 
-```powershell
-python -m mini_torrent.cli tracker --host 127.0.0.1 --port 8000
+Use the right-side `Seed Complete File` panel.
+
+Default sample values:
+
+```text
+.mtorrent path: torrents/hello.txt.mtorrent
+Complete file path: sample_files/hello.txt
+Upload port: 9001
 ```
 
-### 4. Start seeder
+Click `Start Seed`.
 
-Terminal 2:
+### 4. Leech From The Dashboard
 
-```powershell
-python -m mini_torrent.cli seed torrents/hello.txt.mtorrent --file sample_files/hello.txt --host 127.0.0.1 --port 9001 --peer-id seeder-1
+Use the right-side `Download File` panel.
+
+Default sample values:
+
+```text
+.mtorrent path: torrents/hello.txt.mtorrent
+Output file path: downloads/hello.txt
+Upload port: 9002
 ```
 
-### 5. Start leecher
+Click `Start Leech`.
 
-Terminal 3:
+The dashboard table updates as peers announce chunks.
 
-```powershell
-python -m mini_torrent.cli leech torrents/hello.txt.mtorrent --output downloads/hello.txt --host 127.0.0.1 --port 9002 --peer-id leecher-1
-```
+## Optional CLI Commands
 
-The leecher verifies every chunk and then verifies the final file hash.
-
-## Commands
+The app dashboard is the recommended way to run ChunkShare. These commands are still available for testing and debugging.
 
 ### Create a torrent metadata file
 
@@ -66,7 +125,7 @@ The leecher verifies every chunk and then verifies the final file hash.
 python -m mini_torrent.cli create-torrent <file> [--chunk-size 262144] [--output torrents/file.mtorrent]
 ```
 
-### Run tracker
+### Run tracker directly
 
 ```powershell
 python -m mini_torrent.cli tracker --host 127.0.0.1 --port 8000
@@ -84,13 +143,43 @@ python -m mini_torrent.cli seed <torrent> --file <complete-file> --host 127.0.0.
 python -m mini_torrent.cli leech <torrent> --output downloads/file --host 127.0.0.1 --port 9002
 ```
 
-Add `--exit-when-done` if you want the leecher to stop after the download instead of continuing to seed.
+## Testing Across Devices
+
+Run the app on each laptop.
+
+Basic LAN flow:
+
+1. Connect all laptops to the same Wi-Fi or hotspot.
+2. On the hub laptop, open ChunkShare and copy the tracker URL shown in the toolbar/details.
+3. On the seeder laptop, open ChunkShare and paste that tracker URL into `Seed Complete File`.
+4. On the leecher laptop, open ChunkShare and paste that tracker URL into `Download File`.
+5. Start the seeder first, then start the leecher.
+6. Open the hub laptop dashboard to watch seeders, leechers, peers, and chunks.
+
+If the devices cannot connect, allow Python or `ChunkShare.exe` through Windows Firewall.
+
+After a leecher finishes downloading, it has the complete file and becomes a seeder if it stays online. So the next user can download chunks from the original seeder and from the previous leecher.
+
+## Build A Windows EXE
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_exe.ps1
+```
+
+Output:
+
+```text
+dist/ChunkShare/ChunkShare.exe
+```
 
 ## Documentation
 
+- `docs/00_TORRENTING_CONCEPT.md` - general explanation of torrenting concepts
 - `docs/01_PROJECT_PLAN.md` - what we will do, what is done, and what should be done next
 - `docs/02_IMPLEMENTATION_TASKS.md` - checklist of implemented and pending tasks
 - `docs/03_HOW_THE_SYSTEM_WORKS.md` - descriptive explanation of the whole system
 - `docs/04_SYSTEM_WORKFLOW.md` - command workflow for demo and LAN testing
 - `docs/05_TECHNICAL_EXPLANATION.md` - technical details of hashing, chunking, tracker, seeder, and leecher
 - `docs/06_CODE_REFERENCE.md` - file-by-file and function-by-function explanation
+- `docs/07_TESTING_ACROSS_DEVICES.md` - practical LAN test guide
+- `docs/08_BUILDING_EXE.md` - how to build `ChunkShare.exe`

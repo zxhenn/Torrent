@@ -1,2 +1,1 @@
-"""Mini torrent package for a simple distributed file sharing demo."""
-
+"""ChunkShare package for a simple distributed file sharing demo."""

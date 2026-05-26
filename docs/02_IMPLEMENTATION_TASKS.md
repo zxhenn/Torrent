@@ -6,6 +6,12 @@ This checklist tracks what has been implemented and what still needs to be impro
 
 - [x] Create project folder structure.
 - [x] Add Python package folder: `mini_torrent/`.
+- [x] Add app dashboard launcher: `app.py`.
+- [x] Add dashboard-first app flow.
+- [x] Add Windows shortcut launcher: `start_app.bat`.
+- [x] Add one-laptop demo script: `scripts/run_local_demo.ps1`.
+- [x] Add Windows EXE build script: `scripts/build_exe.ps1`.
+- [x] Add Windows EXE build shortcut: `build_exe.bat`.
 - [x] Add sample input folder: `sample_files/`.
 - [x] Add downloads folder: `downloads/`.
 - [x] Add torrent metadata folder: `torrents/`.
@@ -41,10 +47,22 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `/announce` endpoint for peer registration.
 - [x] Add `/peers` endpoint for peer discovery.
 - [x] Add `/health` endpoint for simple checking.
+- [x] Add `/dashboard` browser dashboard.
+- [x] Add `/api/state` dashboard data endpoint.
 - [x] Expire stale peers after a timeout.
 - [x] Protect tracker peer table with a lock for threaded requests.
 - [ ] Save tracker state to a file or database.
 - [ ] Add tracker terminal command to list active peers.
+
+## App Dashboard
+
+- [x] Serve app dashboard from `app.py`.
+- [x] Open dashboard immediately when the app starts.
+- [x] Add create metadata form.
+- [x] Add seed form.
+- [x] Add leech form.
+- [x] Add local jobs list.
+- [x] Show active torrents, peers, seeders, leechers, and chunks.
 
 ## Seeder
 
@@ -75,6 +93,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Support multiple peers on different ports.
 - [x] Allow leechers to upload chunks they already have.
 - [x] Keep file data transfer peer-to-peer instead of through the tracker.
+- [x] Add dashboard fields for LAN IP and tracker URL.
 - [ ] Test on two or more laptops in the same LAN.
 - [ ] Document LAN IP setup with screenshots.
 - [ ] Add a demo script for localhost testing.
@@ -82,12 +101,16 @@ This checklist tracks what has been implemented and what still needs to be impro
 ## Documentation
 
 - [x] Add `README.md`.
+- [x] Add `docs/00_TORRENTING_CONCEPT.md`.
 - [x] Add `docs/01_PROJECT_PLAN.md`.
 - [x] Add `docs/03_HOW_THE_SYSTEM_WORKS.md`.
 - [x] Add `docs/04_SYSTEM_WORKFLOW.md`.
 - [x] Add `docs/05_TECHNICAL_EXPLANATION.md`.
 - [x] Add `docs/06_CODE_REFERENCE.md`.
+- [x] Add `docs/07_TESTING_ACROSS_DEVICES.md`.
+- [x] Add `docs/08_BUILDING_EXE.md`.
 - [x] Add this implementation task checklist.
+- [x] Document dashboard URL.
 - [ ] Add screenshots or terminal output examples.
 - [ ] Add final report-ready architecture diagram.
 - [ ] Add troubleshooting section.
@@ -97,6 +120,10 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Run Python compile check.
 - [x] Run local smoke test with tracker, seeder, and leecher.
 - [x] Confirm downloaded file hash matches source file hash.
+- [x] Test dashboard HTML endpoint.
+- [x] Test dashboard JSON state endpoint.
+- [x] Test app dashboard HTML endpoint.
+- [x] Test app seed API endpoint.
 - [ ] Add automated unit tests for hashing and metadata.
 - [ ] Add automated integration test for tracker, seeder, and leecher.
 - [ ] Test with a larger file.
@@ -106,7 +133,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [ ] Add rarest-first chunk selection.
 - [ ] Add multiple simultaneous chunk downloads.
 - [ ] Add peer blacklist for peers that send bad data.
-- [ ] Add simple GUI.
+- [x] Add app-style dashboard GUI.
 - [ ] Add authentication or peer tokens.
 - [ ] Add persistent tracker storage.
 - [ ] Add configuration file for default ports and tracker URL.

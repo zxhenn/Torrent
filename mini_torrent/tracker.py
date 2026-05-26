@@ -1,4 +1,4 @@
-"""HTTP tracker server.
+"""HTTP tracker server for ChunkShare.
 
 The tracker does not store files. It only stores which peer claims to have
 which chunks for a given file hash.
@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from .constants import DEFAULT_TRACKER_HOST, DEFAULT_TRACKER_PORT, PEER_TTL_SECONDS
+from .dashboard import format_bytes, render_dashboard_html
 
 
 class TrackerState:
@@ -33,6 +34,9 @@ class TrackerState:
                 "host": str(peer["host"]),
                 "port": int(peer["port"]),
                 "chunks": sorted({int(index) for index in peer.get("chunks", [])}),
+                "filename": str(peer.get("filename") or "Unknown file"),
+                "file_size": _optional_int(peer.get("file_size")),
+                "total_chunks": _optional_int(peer.get("total_chunks")),
                 "updated_at": time.time(),
             }
 
@@ -41,14 +45,91 @@ class TrackerState:
         now = time.time()
         with self._lock:
             peers = self.files.get(file_hash, {})
-            stale_peer_ids = [
-                peer_id
-                for peer_id, peer in peers.items()
-                if now - float(peer["updated_at"]) > PEER_TTL_SECONDS
-            ]
-            for peer_id in stale_peer_ids:
-                peers.pop(peer_id, None)
+            self._remove_stale_peers(peers, now)
             return [dict(peer) for peer in peers.values()]
+
+    def snapshot(self) -> dict:
+        """Return tracker state formatted for the dashboard."""
+        now = time.time()
+        torrents = []
+        with self._lock:
+            for file_hash, peers in self.files.items():
+                self._remove_stale_peers(peers, now)
+                live_peers = [dict(peer) for peer in peers.values()]
+                if not live_peers:
+                    continue
+
+                total_chunks = _first_int(live_peers, "total_chunks")
+                if total_chunks is None:
+                    highest_chunk = max(
+                        (max(peer["chunks"]) for peer in live_peers if peer["chunks"]),
+                        default=-1,
+                    )
+                    total_chunks = highest_chunk + 1
+
+                file_size = _first_int(live_peers, "file_size")
+                filename = _first_text(live_peers, "filename", "Unknown file")
+                available = sorted(
+                    {
+                        chunk
+                        for peer in live_peers
+                        for chunk in peer.get("chunks", [])
+                    }
+                )
+                total = total_chunks or 0
+                seeders = sum(
+                    1
+                    for peer in live_peers
+                    if total > 0 and len(peer.get("chunks", [])) >= total
+                )
+                leechers = len(live_peers) - seeders
+                pieces = [
+                    2 if index in available else 0
+                    for index in range(total)
+                ]
+                availability = (len(available) / total * 100) if total else 0
+
+                torrents.append(
+                    {
+                        "file_hash": file_hash,
+                        "filename": filename,
+                        "file_size": file_size,
+                        "file_size_label": format_bytes(file_size),
+                        "total_chunks": total,
+                        "available_chunks": len(available),
+                        "availability_percent": round(availability, 2),
+                        "seeders": seeders,
+                        "leechers": leechers,
+                        "peer_count": len(live_peers),
+                        "pieces": pieces,
+                        "peers": [
+                            {
+                                "peer_id": peer["peer_id"],
+                                "host": peer["host"],
+                                "port": peer["port"],
+                                "chunk_count": len(peer.get("chunks", [])),
+                                "role": "Seeder"
+                                if total > 0 and len(peer.get("chunks", [])) >= total
+                                else "Leecher",
+                                "updated_seconds_ago": int(now - float(peer["updated_at"])),
+                            }
+                            for peer in live_peers
+                        ],
+                    }
+                )
+
+        torrents.sort(key=lambda torrent: torrent["filename"].lower())
+        return {"ok": True, "torrents": torrents, "updated_at": int(now)}
+
+    def _remove_stale_peers(self, peers: dict[str, dict], now: float) -> None:
+        """Remove peer entries that have stopped announcing."""
+        stale_peer_ids = [
+            peer_id
+            for peer_id, peer in peers.items()
+            if now - float(peer["updated_at"]) > PEER_TTL_SECONDS
+        ]
+        for peer_id in stale_peer_ids:
+            peers.pop(peer_id, None)
 
 
 class TrackerRequestHandler(BaseHTTPRequestHandler):
@@ -57,10 +138,16 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
     state = TrackerState()
 
     def do_GET(self) -> None:
-        """Handle health checks and peer list requests."""
+        """Handle dashboard, health, state, and peer list requests."""
         parsed = urlparse(self.path)
+        if parsed.path in ("/", "/dashboard"):
+            self._send_html(200, render_dashboard_html())
+            return
         if parsed.path == "/health":
             self._send_json(200, {"ok": True, "role": "tracker"})
+            return
+        if parsed.path == "/api/state":
+            self._send_json(200, self.state.snapshot())
             return
         if parsed.path == "/peers":
             query = parse_qs(parsed.query)
@@ -106,17 +193,74 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_html(self, status: int, body_text: str) -> None:
+        """Send an HTML response."""
+        body = body_text.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
 
 def run_tracker(
     host: str = DEFAULT_TRACKER_HOST,
     port: int = DEFAULT_TRACKER_PORT,
 ) -> None:
     """Start the tracker HTTP server and block until interrupted."""
-    server = ThreadingHTTPServer((host, port), TrackerRequestHandler)
+    server = create_tracker_server(host, port)
     print(f"Tracker running at http://{host}:{port}")
+    print(f"Dashboard available at http://{host}:{port}/dashboard")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nTracker stopped.")
     finally:
         server.server_close()
+
+
+def create_tracker_server(
+    host: str = DEFAULT_TRACKER_HOST,
+    port: int = DEFAULT_TRACKER_PORT,
+) -> ThreadingHTTPServer:
+    """Create a tracker HTTP server without starting it yet."""
+    return ThreadingHTTPServer((host, port), TrackerRequestHandler)
+
+
+def start_tracker_server(
+    host: str = DEFAULT_TRACKER_HOST,
+    port: int = DEFAULT_TRACKER_PORT,
+) -> ThreadingHTTPServer:
+    """Start the tracker HTTP server in a background thread."""
+    server = create_tracker_server(host, port)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def _optional_int(value: object) -> int | None:
+    """Convert a value to int, or return None when it is missing."""
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _first_int(peers: list[dict], key: str) -> int | None:
+    """Return the first integer value found in peer metadata."""
+    for peer in peers:
+        value = _optional_int(peer.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def _first_text(peers: list[dict], key: str, default: str) -> str:
+    """Return the first non-empty string value found in peer metadata."""
+    for peer in peers:
+        value = str(peer.get(key, "")).strip()
+        if value:
+            return value
+    return default

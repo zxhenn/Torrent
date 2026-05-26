@@ -1,97 +1,145 @@
 # 04 - System Workflow
 
-## Normal Demo Flow
+## App Dashboard Flow
 
-### 1. Use the Sample File
+The easiest way to run ChunkShare is to open the dashboard app:
 
-The project already includes a sample file:
+```powershell
+python app.py
+```
+
+Or run the executable:
 
 ```text
-sample_files/hello.txt
+dist/ChunkShare/ChunkShare.exe
 ```
 
-You can replace it later with your own file. If you do, create a new `.mtorrent` file for that file.
+The dashboard opens immediately in a browser. It can be empty at first. That is normal because no seeder or leecher has joined yet.
 
-Example optional command:
+## One-Laptop Demo
+
+### 1. Open The App
 
 ```powershell
-Set-Content sample_files/hello.txt "Hello distributed world"
+python app.py
 ```
 
-### 2. Create Torrent Metadata
+The app starts:
 
-```powershell
-python -m mini_torrent.cli create-torrent sample_files/hello.txt
-```
+- Local dashboard app
+- Local hub/tracker
+- Browser dashboard
 
-This creates:
+### 2. Seed The Sample File
+
+In the right panel, open `Seed Complete File`.
+
+Use the defaults:
 
 ```text
-torrents/hello.txt.mtorrent
+.mtorrent path: torrents/hello.txt.mtorrent
+Complete file path: sample_files/hello.txt
+Upload port: 9001
 ```
 
-### 3. Start the Tracker
+Click `Start Seed`.
 
-Open terminal 1:
+### 3. Download The Sample File
+
+In the right panel, open `Download File`.
+
+Use the defaults:
+
+```text
+.mtorrent path: torrents/hello.txt.mtorrent
+Output file path: downloads/hello.txt
+Upload port: 9002
+```
+
+Click `Start Leech`.
+
+The dashboard should show:
+
+- Torrent row
+- Seeder count
+- Leecher count
+- Peer count
+- Chunk availability
+- Local jobs
+
+## Across-Device Demo
+
+On every laptop, open ChunkShare.
 
 ```powershell
-python -m mini_torrent.cli tracker --host 127.0.0.1 --port 8000
+python app.py
 ```
 
-The tracker waits for peer announcements.
+Or use:
 
-### 4. Start a Seeder
-
-Open terminal 2:
-
-```powershell
-python -m mini_torrent.cli seed torrents/hello.txt.mtorrent --file sample_files/hello.txt --host 127.0.0.1 --port 9001 --peer-id seeder-1
+```text
+ChunkShare.exe
 ```
 
-The seeder announces that it has all chunks.
+### 1. Hub Laptop
 
-### 5. Start a Leecher
+Use one laptop as the hub. Its dashboard opens automatically.
 
-Open terminal 3:
+Copy the tracker URL shown by the app, for example:
 
-```powershell
-python -m mini_torrent.cli leech torrents/hello.txt.mtorrent --output downloads/hello.txt --host 127.0.0.1 --port 9002 --peer-id leecher-1
+```text
+http://192.168.1.10:8000
 ```
 
-The leecher downloads missing chunks from the seeder.
+### 2. Seeder Laptop
 
-### 6. Leecher Becomes Seeder
+On the laptop that has the complete file:
 
-After the leecher finishes, it keeps running by default. This means it can upload the same chunks to future leechers.
+1. Open `Seed Complete File`.
+2. Paste the hub laptop tracker URL.
+3. Enter the `.mtorrent` path.
+4. Enter the complete file path.
+5. Use this laptop's own LAN IP as `This peer IP`.
+6. Click `Start Seed`.
 
-Use this option if you want the leecher to exit after downloading:
+### 3. Leecher Laptop
 
-```powershell
---exit-when-done
-```
+On the laptop that will download:
 
-## Distributed Version on LAN
+1. Open `Download File`.
+2. Paste the same hub laptop tracker URL.
+3. Enter the same `.mtorrent` path.
+4. Choose an output file path.
+5. Use this laptop's own LAN IP as `This peer IP`.
+6. Click `Start Leech`.
 
-On different laptops:
+After downloading, the leecher becomes another seeder if it stays online.
 
-1. One laptop runs the tracker.
-2. A seeder runs with its LAN IP address.
-3. A leecher connects to the tracker using the tracker's LAN IP address.
+## Creating Metadata
+
+Use the `Create Metadata` panel in the dashboard.
 
 Example:
 
-```powershell
-python -m mini_torrent.cli tracker --host 0.0.0.0 --port 8000
+```text
+File to share: sample_files/hello.txt
+Chunk size: 262144
+Output .mtorrent path: torrents/hello.txt.mtorrent
 ```
 
-Seeder:
+Every device must use the same `.mtorrent` file for the same shared file.
+
+## Build A Windows Executable
 
 ```powershell
-python -m mini_torrent.cli seed torrents/hello.txt.mtorrent --file sample_files/hello.txt --tracker http://192.168.1.10:8000 --host 192.168.1.11 --port 9001
+powershell -ExecutionPolicy Bypass -File scripts/build_exe.ps1
 ```
 
-Leecher:
+Output:
 
-```powershell
-python -m mini_torrent.cli leech torrents/hello.txt.mtorrent --tracker http://192.168.1.10:8000 --host 192.168.1.12 --port 9002
+```text
+dist/ChunkShare/ChunkShare.exe
 ```
+
+Share the whole `dist/ChunkShare/` folder for demos.
+

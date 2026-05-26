@@ -20,6 +20,9 @@ def announce_to_tracker(
     host: str,
     port: int,
     chunks: list[int],
+    filename: str | None = None,
+    file_size: int | None = None,
+    total_chunks: int | None = None,
 ) -> dict:
     """Tell the tracker which chunks this peer can upload."""
     payload = json.dumps(
@@ -29,6 +32,9 @@ def announce_to_tracker(
             "host": host,
             "port": port,
             "chunks": chunks,
+            "filename": filename,
+            "file_size": file_size,
+            "total_chunks": total_chunks,
         }
     ).encode("utf-8")
     request = Request(
@@ -45,4 +51,3 @@ def get_peers(tracker_url: str, file_hash: str) -> list[dict]:
     query = urlencode({"file_hash": file_hash})
     data = _read_json_response(tracker_url.rstrip("/") + f"/peers?{query}")
     return list(data.get("peers", []))
-

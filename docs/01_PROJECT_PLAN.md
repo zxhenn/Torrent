@@ -1,6 +1,6 @@
 # 01 - Project Plan
 
-This project is a small torrent-like distributed file sharing system. It is not a full BitTorrent client. The goal is to show the basic distributed computing ideas clearly:
+ChunkShare is a small torrent-like distributed file sharing system. It is not a full BitTorrent client. The goal is to show the basic distributed computing ideas clearly:
 
 - Hashing
 - Chunking
@@ -28,6 +28,10 @@ This project is a small torrent-like distributed file sharing system. It is not 
    - It checks every chunk hash before saving.
    - After finishing, it can stay online and become another seeder.
 
+5. Provide an app-style dashboard.
+   - The dashboard opens first.
+   - It can create metadata, start seeders, start leechers, and show swarm state.
+
 ## What Is Done
 
 - Python package structure created in `mini_torrent/`.
@@ -35,25 +39,33 @@ This project is a small torrent-like distributed file sharing system. It is not 
 - SHA-256 chunk hashing implemented.
 - Torrent metadata generation implemented.
 - Tracker server implemented.
+- Tracker dashboard implemented.
+- App dashboard with seed/leech controls implemented.
 - Peer upload server implemented.
 - Seeder command implemented.
 - Leecher command implemented.
+- Dashboard app implemented.
+- Windows launcher and local demo script added.
+- Windows EXE build script added.
+- Cross-device testing guide added.
 - Resume progress file implemented for partial downloads.
 - Documentation structure created in `docs/`.
 - Included sample file created at `sample_files/hello.txt`.
 - Sample metadata created at `torrents/hello.txt.mtorrent`.
 - Local smoke test passed with tracker, seeder, and leecher.
+- Dashboard HTTP and tracker state endpoint tested locally.
+- Dashboard app API tested locally.
 
 ## What We Should Do Next
 
 - Use `docs/02_IMPLEMENTATION_TASKS.md` as the main team checklist.
 - Add screenshots or terminal logs for the final report.
-- Add a small sample file in `sample_files/`.
+- Add dashboard screenshot for the final report.
 - Test on two different laptops in the same network.
 - Add a simple diagram to the report.
 - Add optional chunk selection strategy like rarest-first.
 - Add automated tests if required by the instructor.
-- Add a GUI only if there is extra time.
+- Improve the app UI if there is extra time.
 
 ## Current Limitations
 

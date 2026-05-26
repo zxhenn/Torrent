@@ -61,6 +61,8 @@ The tracker does not upload the shared file. It only stores peer information:
 - Available chunk indexes
 - Last update time
 
+The tracker can also serve a read-only browser dashboard at `/dashboard`. The main ChunkShare app uses a larger dashboard served by `app.py`.
+
 ### Seeder
 
 A seeder is a peer with the full file. It:
@@ -83,6 +85,47 @@ A leecher is a peer that still needs chunks. It:
 6. Verifies each chunk before saving.
 7. Verifies the whole file after all chunks are downloaded.
 8. Can stay online and become a seeder.
+
+### App Dashboard
+
+The main dashboard is a simple HTML page served by `app.py`. It is not a separate frontend framework.
+
+It shows:
+
+- Active torrent metadata
+- File availability percentage
+- Seeder count
+- Leecher count
+- Peer count
+- Chunk availability bars
+- Peer roles based on how many chunks each peer has
+- Local seed/leech jobs
+
+The dashboard can also start actions:
+
+- Create `.mtorrent` metadata
+- Start a seeder
+- Start a leecher
+
+### Dashboard App Server
+
+`app.py` starts a local HTTP app server and opens the dashboard in the browser. It also starts a local hub/tracker automatically.
+
+The dashboard uses these local API routes:
+
+- `GET /app` shows the dashboard.
+- `GET /api/status` returns dashboard state.
+- `POST /api/create-torrent` creates metadata.
+- `POST /api/seed` starts a local seeder.
+- `POST /api/leech` starts a local leecher.
+
+The app still uses distributed roles underneath. The dashboard only makes them easier to control.
+
+### Executable Build
+
+The project can be packaged into `ChunkShare.exe` with PyInstaller.
+
+The executable is easier to run during demos, but it does not change the system design. It opens the same dashboard app and still exchanges chunks peer-to-peer.
 
 ## Robustness Choices
 

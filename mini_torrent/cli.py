@@ -1,4 +1,4 @@
-"""Command line interface for the mini torrent system."""
+"""Command line interface for the ChunkShare system."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ from .tracker_client import announce_to_tracker
 def build_parser() -> argparse.ArgumentParser:
     """Create the command parser and subcommands."""
     parser = argparse.ArgumentParser(
-        prog="mini-torrent",
-        description="Simple torrent-like file sharing demo.",
+        prog="chunkshare",
+        description="Simple chunk-based peer-to-peer file sharing demo.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
 
@@ -107,6 +107,9 @@ def command_seed(args: argparse.Namespace) -> None:
                 args.host,
                 args.port,
                 storage.list_chunks(),
+                meta.filename,
+                meta.file_size,
+                meta.total_chunks,
             )
             print(f"Announced {len(storage.list_chunks())} chunks to tracker")
             time.sleep(30)
@@ -154,6 +157,9 @@ def command_leech(args: argparse.Namespace) -> None:
                 args.host,
                 args.port,
                 storage.list_chunks(),
+                meta.filename,
+                meta.file_size,
+                meta.total_chunks,
             )
             time.sleep(30)
     except KeyboardInterrupt:
@@ -172,4 +178,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

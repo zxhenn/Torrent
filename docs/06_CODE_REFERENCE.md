@@ -27,6 +27,48 @@ PROGRESS_SUFFIX = ".progress.json"
 
 Explanation: These constants keep repeated settings in one place. The chunk size is `256 KB`, the tracker defaults to localhost port `8000`, peer records expire after `120` seconds, and partial downloads use `.progress.json`.
 
+## Directory/File: `mini_torrent/dashboard.py`
+
+### Function: `format_bytes`
+
+Description: Converts a byte count into a readable size label.
+
+Block of code:
+
+```python
+def format_bytes(size: int | None) -> str:
+    """Convert a byte count into a short human-readable label."""
+    if size is None:
+        return "Unknown"
+    units = ["B", "KB", "MB", "GB"]
+    value = float(size)
+    unit_index = 0
+    while value >= 1024 and unit_index < len(units) - 1:
+        value /= 1024
+        unit_index += 1
+    if unit_index == 0:
+        return f"{int(value)} {units[unit_index]}"
+    return f"{value:.1f} {units[unit_index]}"
+```
+
+Explanation: The dashboard uses this so file sizes show as labels like `104 B`, `1.5 MB`, or `2.0 GB`.
+
+### Function: `render_dashboard_html`
+
+Description: Returns the full HTML, CSS, and JavaScript dashboard page.
+
+Block of code:
+
+```python
+def render_dashboard_html() -> str:
+    """Return the tracker dashboard page."""
+    return """<!doctype html>
+    ...
+    """
+```
+
+Explanation: The tracker serves this page at `/dashboard`. The page calls `/api/state` every few seconds to show active torrents, seeders, leechers, peers, and chunk availability.
+
 ## Directory/File: `mini_torrent/hashing.py`
 
 ### Function: `sha256_bytes`
@@ -300,6 +342,9 @@ def announce_to_tracker(
     host: str,
     port: int,
     chunks: list[int],
+    filename: str | None = None,
+    file_size: int | None = None,
+    total_chunks: int | None = None,
 ) -> dict:
     """Tell the tracker which chunks this peer can upload."""
     payload = json.dumps(
@@ -309,6 +354,9 @@ def announce_to_tracker(
             "host": host,
             "port": port,
             "chunks": chunks,
+            "filename": filename,
+            "file_size": file_size,
+            "total_chunks": total_chunks,
         }
     ).encode("utf-8")
     request = Request(
@@ -320,7 +368,7 @@ def announce_to_tracker(
     return _read_json_response(request)
 ```
 
-Explanation: Seeders and leechers use this to tell the tracker what they can share.
+Explanation: Seeders and leechers use this to tell the tracker what they can share. The filename, file size, and total chunk count are included so the dashboard can show readable torrent information.
 
 ### Function: `get_peers`
 
@@ -676,11 +724,14 @@ def announce(self, peer: dict) -> None:
             "host": str(peer["host"]),
             "port": int(peer["port"]),
             "chunks": sorted({int(index) for index in peer.get("chunks", [])}),
+            "filename": str(peer.get("filename") or "Unknown file"),
+            "file_size": _optional_int(peer.get("file_size")),
+            "total_chunks": _optional_int(peer.get("total_chunks")),
             "updated_at": time.time(),
         }
 ```
 
-Explanation: Every announce refreshes the peer's available chunks and timestamp.
+Explanation: Every announce refreshes the peer's available chunks, metadata, and timestamp.
 
 ### Function: `TrackerState.peers_for`
 
@@ -694,17 +745,54 @@ def peers_for(self, file_hash: str) -> list[dict]:
     now = time.time()
     with self._lock:
         peers = self.files.get(file_hash, {})
-        stale_peer_ids = [
-            peer_id
-            for peer_id, peer in peers.items()
-            if now - float(peer["updated_at"]) > PEER_TTL_SECONDS
-        ]
-        for peer_id in stale_peer_ids:
-            peers.pop(peer_id, None)
+        self._remove_stale_peers(peers, now)
         return [dict(peer) for peer in peers.values()]
 ```
 
 Explanation: Peers that stop announcing are removed after the timeout.
+
+### Function: `TrackerState.snapshot`
+
+Description: Builds dashboard-friendly tracker state.
+
+Block of code:
+
+```python
+def snapshot(self) -> dict:
+    """Return tracker state formatted for the dashboard."""
+    now = time.time()
+    torrents = []
+    with self._lock:
+        for file_hash, peers in self.files.items():
+            self._remove_stale_peers(peers, now)
+            live_peers = [dict(peer) for peer in peers.values()]
+            if not live_peers:
+                continue
+            ...
+    return {"ok": True, "torrents": torrents, "updated_at": int(now)}
+```
+
+Explanation: This powers `/api/state`. It groups peers by file hash and calculates seeders, leechers, peer count, chunk availability, and dashboard piece bars.
+
+### Function: `TrackerState._remove_stale_peers`
+
+Description: Removes peers that stopped announcing.
+
+Block of code:
+
+```python
+def _remove_stale_peers(self, peers: dict[str, dict], now: float) -> None:
+    """Remove peer entries that have stopped announcing."""
+    stale_peer_ids = [
+        peer_id
+        for peer_id, peer in peers.items()
+        if now - float(peer["updated_at"]) > PEER_TTL_SECONDS
+    ]
+    for peer_id in stale_peer_ids:
+        peers.pop(peer_id, None)
+```
+
+Explanation: The tracker and dashboard should not show peers that have been offline for too long.
 
 ### Function/Class: `TrackerRequestHandler`
 
@@ -723,16 +811,22 @@ Explanation: All tracker requests share the same in-memory state.
 
 ### Function: `TrackerRequestHandler.do_GET`
 
-Description: Handles `/health` and `/peers`.
+Description: Handles dashboard, health check, tracker state, and peer list requests.
 
 Block of code:
 
 ```python
 def do_GET(self) -> None:
-    """Handle health checks and peer list requests."""
+    """Handle dashboard, health, state, and peer list requests."""
     parsed = urlparse(self.path)
+    if parsed.path in ("/", "/dashboard"):
+        self._send_html(200, render_dashboard_html())
+        return
     if parsed.path == "/health":
         self._send_json(200, {"ok": True, "role": "tracker"})
+        return
+    if parsed.path == "/api/state":
+        self._send_json(200, self.state.snapshot())
         return
     if parsed.path == "/peers":
         query = parse_qs(parsed.query)
@@ -745,7 +839,7 @@ def do_GET(self) -> None:
     self._send_json(404, {"error": "not found"})
 ```
 
-Explanation: Leechers use `/peers` to discover uploaders.
+Explanation: Leechers use `/peers` to discover uploaders. Browsers use `/dashboard` for the visual page and `/api/state` for live dashboard data.
 
 ### Function: `TrackerRequestHandler.do_POST`
 
@@ -821,6 +915,25 @@ def _send_json(self, status: int, payload: dict) -> None:
 
 Explanation: All tracker responses use JSON.
 
+### Function: `TrackerRequestHandler._send_html`
+
+Description: Sends HTML responses.
+
+Block of code:
+
+```python
+def _send_html(self, status: int, body_text: str) -> None:
+    """Send an HTML response."""
+    body = body_text.encode("utf-8")
+    self.send_response(status)
+    self.send_header("Content-Type", "text/html; charset=utf-8")
+    self.send_header("Content-Length", str(len(body)))
+    self.end_headers()
+    self.wfile.write(body)
+```
+
+Explanation: The dashboard page uses HTML instead of JSON.
+
 ### Function: `run_tracker`
 
 Description: Starts the tracker server.
@@ -833,8 +946,9 @@ def run_tracker(
     port: int = DEFAULT_TRACKER_PORT,
 ) -> None:
     """Start the tracker HTTP server and block until interrupted."""
-    server = ThreadingHTTPServer((host, port), TrackerRequestHandler)
+    server = create_tracker_server(host, port)
     print(f"Tracker running at http://{host}:{port}")
+    print(f"Dashboard available at http://{host}:{port}/dashboard")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -843,7 +957,99 @@ def run_tracker(
         server.server_close()
 ```
 
-Explanation: This command stays running until the user presses `Ctrl+C`.
+Explanation: This command stays running until the user presses `Ctrl+C`. It also prints the dashboard URL.
+
+### Function: `create_tracker_server`
+
+Description: Creates the tracker HTTP server without starting it.
+
+Block of code:
+
+```python
+def create_tracker_server(
+    host: str = DEFAULT_TRACKER_HOST,
+    port: int = DEFAULT_TRACKER_PORT,
+) -> ThreadingHTTPServer:
+    """Create a tracker HTTP server without starting it yet."""
+    return ThreadingHTTPServer((host, port), TrackerRequestHandler)
+```
+
+Explanation: This helper lets both the direct CLI and the launcher create the same tracker server.
+
+### Function: `start_tracker_server`
+
+Description: Starts the tracker HTTP server in the background.
+
+Block of code:
+
+```python
+def start_tracker_server(
+    host: str = DEFAULT_TRACKER_HOST,
+    port: int = DEFAULT_TRACKER_PORT,
+) -> ThreadingHTTPServer:
+    """Start the tracker HTTP server in a background thread."""
+    server = create_tracker_server(host, port)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+```
+
+Explanation: The launcher uses this so the Hub + Dashboard can run while the menu remains usable.
+
+### Function: `_optional_int`
+
+Description: Converts optional metadata values to integers.
+
+Block of code:
+
+```python
+def _optional_int(value: object) -> int | None:
+    """Convert a value to int, or return None when it is missing."""
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+```
+
+Explanation: Tracker announces come from HTTP JSON, so metadata values are checked before they are used.
+
+### Function: `_first_int`
+
+Description: Gets the first usable integer from peer metadata.
+
+Block of code:
+
+```python
+def _first_int(peers: list[dict], key: str) -> int | None:
+    """Return the first integer value found in peer metadata."""
+    for peer in peers:
+        value = _optional_int(peer.get(key))
+        if value is not None:
+            return value
+    return None
+```
+
+Explanation: The dashboard uses this to find file size and total chunk count from peer announces.
+
+### Function: `_first_text`
+
+Description: Gets the first usable text value from peer metadata.
+
+Block of code:
+
+```python
+def _first_text(peers: list[dict], key: str, default: str) -> str:
+    """Return the first non-empty string value found in peer metadata."""
+    for peer in peers:
+        value = str(peer.get(key, "")).strip()
+        if value:
+            return value
+    return default
+```
+
+Explanation: The dashboard uses this to show a readable filename.
 
 ## Directory/File: `mini_torrent/peer_server.py`
 
@@ -1057,6 +1263,9 @@ def download_until_complete(
         listen_host,
         listen_port,
         storage.list_chunks(),
+        meta.filename,
+        meta.file_size,
+        meta.total_chunks,
     )
 
     for round_number in range(1, max_rounds + 1):
@@ -1094,6 +1303,9 @@ def download_until_complete(
                         listen_host,
                         listen_port,
                         storage.list_chunks(),
+                        meta.filename,
+                        meta.file_size,
+                        meta.total_chunks,
                     )
                     break
 
@@ -1107,7 +1319,7 @@ def download_until_complete(
     return storage.verify_complete_file()
 ```
 
-Explanation: The leecher repeatedly asks the tracker for peers, downloads missing chunks, verifies them through `ChunkStorage.write_chunk`, and announces progress after each successful chunk.
+Explanation: The leecher repeatedly asks the tracker for peers, downloads missing chunks, verifies them through `ChunkStorage.write_chunk`, and announces progress after each successful chunk. Metadata is included in announces so the dashboard can show the file name, size, and chunk count.
 
 ## Directory/File: `mini_torrent/cli.py`
 
@@ -1121,8 +1333,8 @@ Block of code:
 def build_parser() -> argparse.ArgumentParser:
     """Create the command parser and subcommands."""
     parser = argparse.ArgumentParser(
-        prog="mini-torrent",
-        description="Simple torrent-like file sharing demo.",
+        prog="chunkshare",
+        description="Simple chunk-based peer-to-peer file sharing demo.",
     )
 ```
 
@@ -1230,6 +1442,160 @@ def main() -> None:
 
 Explanation: This parses the command and runs the selected function.
 
+## Directory/File: `app.py`
+
+### Function/Class: `ManagedPeer`
+
+Description: Represents one local seeding or leeching job started from the dashboard.
+
+```python
+class ManagedPeer:
+    """One local seeding or leeching job controlled by the dashboard."""
+```
+
+Explanation: The app dashboard uses this to remember local peer role, peer ID, port, metadata, storage, status, and background thread.
+
+### Function: `ManagedPeer.start_seeding`
+
+Description: Starts a seeder announce loop.
+
+```python
+def start_seeding(self) -> None:
+    """Start the peer announce loop in a background thread."""
+    self.status = "Seeding"
+    self.thread = threading.Thread(target=self._announce_loop, daemon=True)
+    self.thread.start()
+```
+
+Explanation: The peer keeps telling the tracker which chunks it has.
+
+### Function: `ManagedPeer.start_leeching`
+
+Description: Starts a leecher download loop.
+
+```
+def start_leeching(self) -> None:
+    """Start the download loop in a background thread."""
+    self.status = "Leeching"
+    self.thread = threading.Thread(target=self._download_loop, daemon=True)
+    self.thread.start()
+```
+
+Explanation: The leecher downloads chunks in the background while the dashboard stays open.
+
+### Function/Class: `AppState`
+
+Description: Owns dashboard app state, local peers, and the local hub/tracker.
+
+```
+class AppState:
+    """State owned by the ChunkShare dashboard app."""
+```
+
+Explanation: `AppState` starts the hub automatically, provides dashboard status, and starts local seed/leech jobs from API requests.
+
+### Function: `AppState.snapshot`
+
+Description: Returns all dashboard data.
+
+
+```python
+def snapshot(self) -> dict[str, Any]:
+    """Return full app state for the dashboard."""
+    return {
+        "ok": True,
+        "lan_ip": self.lan_ip,
+        "tracker_url": self.tracker_url,
+        "tracker": TrackerRequestHandler.state.snapshot(),
+        "local_peers": peers,
+    }
+```
+
+Explanation: The browser calls `/api/status`, which uses this function to draw the torrent table, peer counts, and local jobs.
+
+### Function: `AppState.start_seed`
+
+Description: Starts a local seeder from dashboard input.
+
+
+```python
+def start_seed(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Start a local seeder from dashboard input."""
+    meta = TorrentMeta.load(torrent_path)
+    validate_file_against_metadata(file_path, meta)
+    storage = ChunkStorage(meta, file_path, complete_source=True)
+    peer = ManagedPeer("Seeder", peer_id, tracker_url, host, port, meta, storage)
+    peer.start_seeding()
+    return {"ok": True, "peer_id": peer_id}
+```
+
+Explanation: This is what the `Start Seed` button calls.
+
+### Function: `AppState.start_leech`
+
+Description: Starts a local leecher from dashboard input.
+
+
+```python
+def start_leech(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Start a local leecher from dashboard input."""
+    meta = TorrentMeta.load(torrent_path)
+    storage = ChunkStorage(meta, output_path, complete_source=False)
+    peer = ManagedPeer("Leecher", peer_id, tracker_url, host, port, meta, storage)
+    peer.start_leeching()
+    return {"ok": True, "peer_id": peer_id}
+```
+
+Explanation: This is what the `Start Leech` button calls.
+
+### Function/Class: `AppRequestHandler`
+
+Description: Serves the dashboard page and app API routes.
+
+
+```python
+class AppRequestHandler(BaseHTTPRequestHandler):
+    """HTTP handler for the ChunkShare dashboard app."""
+```
+
+Explanation: It serves `/app`, `/api/status`, `/api/create-torrent`, `/api/seed`, and `/api/leech`.
+
+### Function: `run_app`
+
+Description: Starts ChunkShare and opens the dashboard.
+
+
+```python
+def run_app() -> None:
+    """Start ChunkShare and open the dashboard."""
+    state = AppState()
+    AppRequestHandler.state = state
+    server = ThreadingHTTPServer((APP_HOST, state.app_port), AppRequestHandler)
+    app_url = f"http://127.0.0.1:{state.app_port}/app"
+    webbrowser.open(app_url)
+    server.serve_forever()
+```
+
+Explanation: This is the app entry point used by `python app.py` and `ChunkShare.exe`.
+
+## Directory/File: `mini_torrent/app_dashboard.py`
+
+### Function: `render_app_html`
+
+Description: Returns the HTML, CSS, and JavaScript for the app-style dashboard.
+
+Block of code:
+
+```python
+def render_app_html() -> str:
+    """Return the ChunkShare app dashboard page."""
+    return """<!doctype html>
+    ...
+    """
+```
+
+Explanation: The dashboard looks like a torrent client: sidebar, toolbar, torrent table, detail panels, chunk bars, and seed/leech forms.
+
 ## Supporting Files
 
 ### Directory/File: `README.md`
@@ -1241,10 +1607,73 @@ Description: Gives quick start commands, command reference, requirements, and do
 Block of code:
 
 ```text
-Mini Torrent Distributed File Sharing Demo
+ChunkShare Distributed File Sharing Demo
 ```
 
 Explanation: This is the first file teammates should read when cloning the repository.
+
+### Directory/File: `start_app.bat`
+
+Function: Windows launcher shortcut.
+
+Description: Runs the interactive launcher from the project folder.
+
+Block of code:
+
+```bat
+@echo off
+cd /d "%~dp0"
+python app.py
+if errorlevel 1 py app.py
+pause
+```
+
+Explanation: This gives Windows users a simple double-clickable entry point.
+
+### Directory/File: `scripts/run_local_demo.ps1`
+
+Function: one-laptop demo script.
+
+Description: Opens tracker and seeder windows, opens the dashboard, and runs one leecher download.
+
+Block of code:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_local_demo.ps1
+```
+
+Explanation: This is useful for quickly proving that the system works on one machine before LAN testing.
+
+### Directory/File: `scripts/build_exe.ps1`
+
+Function: Windows executable build script.
+
+Description: Builds `dist/ChunkShare/ChunkShare.exe` with PyInstaller.
+
+Block of code:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_exe.ps1
+```
+
+Explanation: This creates a local `.venv`, installs PyInstaller, builds the executable, and copies sample files, torrents, docs, and the README into the output folder.
+
+### Directory/File: `build_exe.bat`
+
+Function: Windows build shortcut.
+
+Description: Runs the PowerShell build script.
+
+Block of code:
+
+```bat
+@echo off
+cd /d "%~dp0"
+powershell -ExecutionPolicy Bypass -File scripts\build_exe.ps1
+pause
+```
+
+Explanation: This is the easiest build entry point for Windows users.
 
 ### Directory/File: `.gitignore`
 
@@ -1295,6 +1724,25 @@ Block of code:
 
 Explanation: This prebuilt metadata uses a small chunk size so the sample file splits into multiple chunks for demonstration.
 
+### Directory/File: `docs/00_TORRENTING_CONCEPT.md`
+
+Function: concept explanation.
+
+Description: Explains torrenting terms and ideas before discussing this project.
+
+Block of code:
+
+```text
+Seeder
+Leecher
+Swarm
+Tracker
+Chunk
+Hash
+```
+
+Explanation: This should be read first by teammates who are new to torrenting.
+
 ### Directory/File: `docs/01_PROJECT_PLAN.md`
 
 Function: project status document.
@@ -1326,23 +1774,19 @@ Block of code:
 
 Explanation: This helps the team see what is already done and what can be improved next.
 
-### Directory/File: `docs/05_TECHNICAL_EXPLANATION.md`
+### Directory/File: `docs/03_HOW_THE_SYSTEM_WORKS.md`
 
-Function: technical notes.
+Function: descriptive explanation.
 
-Description: Explains hashing, chunking, the tracker, the seeder, and the leecher.
+Description: Explains the system in plain language.
 
 Block of code:
 
 ```text
-Hashing
-Chunking
-Tracker
-Seeder
-Leecher
+The tracker is like a directory.
 ```
 
-Explanation: This is useful for reports or defense questions.
+Explanation: This is helpful for non-code explanations in presentations.
 
 ### Directory/File: `docs/04_SYSTEM_WORKFLOW.md`
 
@@ -1361,19 +1805,23 @@ leech
 
 Explanation: This is the hands-on guide for running the system.
 
-### Directory/File: `docs/03_HOW_THE_SYSTEM_WORKS.md`
+### Directory/File: `docs/05_TECHNICAL_EXPLANATION.md`
 
-Function: descriptive explanation.
+Function: technical notes.
 
-Description: Explains the system in plain language.
+Description: Explains hashing, chunking, the tracker, the seeder, and the leecher.
 
 Block of code:
 
 ```text
-The tracker is like a directory.
+Hashing
+Chunking
+Tracker
+Seeder
+Leecher
 ```
 
-Explanation: This is helpful for non-code explanations in presentations.
+Explanation: This is useful for reports or defense questions.
 
 ### Directory/File: `docs/06_CODE_REFERENCE.md`
 
@@ -1392,3 +1840,33 @@ Explanation
 ```
 
 Explanation: This follows the requested format and helps teammates study the implementation file by file.
+
+### Directory/File: `docs/07_TESTING_ACROSS_DEVICES.md`
+
+Function: LAN testing guide.
+
+Description: Explains how to test ChunkShare on multiple laptops.
+
+Block of code:
+
+```text
+Hub laptop
+Seeder laptop
+Leecher laptop
+```
+
+Explanation: This is the practical guide for proving the distributed behavior across devices.
+
+### Directory/File: `docs/08_BUILDING_EXE.md`
+
+Function: executable build guide.
+
+Description: Explains how to create and share `ChunkShare.exe`.
+
+Block of code:
+
+```text
+dist/ChunkShare/ChunkShare.exe
+```
+
+Explanation: This helps teammates run the project without typing Python commands, as long as the executable has been built first.

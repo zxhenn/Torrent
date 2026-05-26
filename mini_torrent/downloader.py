@@ -38,6 +38,9 @@ def download_until_complete(
         listen_host,
         listen_port,
         storage.list_chunks(),
+        meta.filename,
+        meta.file_size,
+        meta.total_chunks,
     )
 
     for round_number in range(1, max_rounds + 1):
@@ -75,6 +78,9 @@ def download_until_complete(
                         listen_host,
                         listen_port,
                         storage.list_chunks(),
+                        meta.filename,
+                        meta.file_size,
+                        meta.total_chunks,
                     )
                     break
 
@@ -86,4 +92,3 @@ def download_until_complete(
             time.sleep(2)
 
     return storage.verify_complete_file()
-
