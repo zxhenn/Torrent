@@ -198,6 +198,12 @@ http://HUB_IP:8000/health
 
 If this fails, the leecher cannot reach the hub/tracker.
 
+## One-Laptop Docker Demo
+
+If you do not have a second device, use Docker to simulate a leecher on the same laptop:
+
+- See [docs/11_DOCKER_DEMO.md](docs/11_DOCKER_DEMO.md).
+
 Then test the seeder upload server from the leecher laptop browser:
 
 ```text

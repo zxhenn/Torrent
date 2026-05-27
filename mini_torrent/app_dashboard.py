@@ -12,29 +12,32 @@ def render_app_html() -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ChunkShare</title>
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
+
     :root {
-      --bg: #f3f6f8;
-      --panel: #ffffff;
-      --sidebar: #edf2f6;
-      --line: #cfd8e1;
-      --line-soft: #e5ebf0;
-      --text: #1f2933;
-      --muted: #647281;
-      --blue: #5b9de6;
-      --blue-dark: #2e74b8;
-      --green: #92cd5a;
-      --green-dark: #5ea132;
-      --yellow: #e4bb4c;
-      --red: #c44f4f;
+      --bg: #0f1215;
+      --panel: #161a1e;
+      --panel-2: #1c2126;
+      --sidebar: #12161a;
+      --line: #2a3238;
+      --line-soft: #232a30;
+      --text: #e7edf2;
+      --muted: #9aa6af;
+      --accent: #c7f30a;
+      --accent-strong: #a3d906;
+      --green: #8fe53d;
+      --green-dark: #53b81f;
+      --yellow: #f0d14a;
+      --red: #ff6b6b;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: var(--bg);
+      background: radial-gradient(1200px 520px at 10% -10%, #1f262c 0%, #11161a 45%, #0b0f12 100%);
       color: var(--text);
-      font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Space Grotesk", "Segoe UI", Arial, sans-serif;
       font-size: 13px;
     }
 
@@ -47,7 +50,36 @@ def render_app_html() -> str:
     .sidebar {
       background: var(--sidebar);
       border-right: 1px solid var(--line);
-      padding: 12px;
+      padding: 14px 12px;
+    }
+
+    .sidebar.open { left: 0; }
+
+    .menu-toggle {
+      display: none;
+      min-width: 34px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 10, 12, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 8;
+    }
+
+    .nav-scrim.visible {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .brand {
@@ -55,9 +87,10 @@ def render_app_html() -> str:
       align-items: center;
       gap: 8px;
       height: 36px;
-      color: #20364d;
+      color: #f1f5f8;
       font-size: 15px;
       font-weight: 700;
+      letter-spacing: 0.3px;
     }
 
     .brand-mark {
@@ -65,10 +98,11 @@ def render_app_html() -> str:
       place-items: center;
       width: 24px;
       height: 24px;
-      border-radius: 50%;
-      background: var(--green);
-      color: white;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #f4ff8a);
+      color: #121417;
       font-weight: 800;
+      box-shadow: 0 0 12px rgba(199, 243, 10, 0.35);
     }
 
     .nav { margin-top: 16px; }
@@ -77,25 +111,27 @@ def render_app_html() -> str:
       display: flex;
       justify-content: space-between;
       padding: 9px 10px;
-      border-radius: 4px;
-      color: #33485e;
+      border-radius: 8px;
+      color: #c7d2dc;
     }
 
     .nav-item.active {
-      background: #d9eafa;
-      color: #184f89;
+      background: rgba(199, 243, 10, 0.12);
+      color: #f1f5f8;
       font-weight: 700;
+      box-shadow: inset 2px 0 0 var(--accent);
     }
 
     .nav-count { color: var(--muted); }
 
     .hint {
       margin-top: 18px;
-      padding: 10px;
+      padding: 12px;
       border: 1px solid var(--line);
-      background: #f9fbfd;
+      background: rgba(22, 26, 30, 0.9);
       color: var(--muted);
       line-height: 1.35;
+      border-radius: 10px;
     }
 
     .main {
@@ -108,19 +144,20 @@ def render_app_html() -> str:
       display: flex;
       align-items: center;
       gap: 8px;
-      min-height: 46px;
-      padding: 8px 12px;
+      min-height: 52px;
+      padding: 10px 14px;
       background: var(--panel);
       border-bottom: 1px solid var(--line);
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
     }
 
     .tool-button {
       min-width: 34px;
-      height: 30px;
+      height: 32px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      background: #f9fbfc;
-      color: #34495e;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
       font-weight: 700;
       cursor: pointer;
     }
@@ -131,9 +168,10 @@ def render_app_html() -> str:
     }
 
     .tool-button.primary {
-      background: #e9f3ff;
-      color: #1d5e9e;
-      border-color: #9fc5e8;
+      background: linear-gradient(135deg, var(--accent), #f1ff8d);
+      color: #14181c;
+      border-color: #d9ff5c;
+      box-shadow: 0 6px 16px rgba(199, 243, 10, 0.25);
     }
 
     .tool-button.danger {
@@ -141,23 +179,23 @@ def render_app_html() -> str:
     }
 
     .tool-button.warning {
-      color: #8a6500;
+      color: var(--yellow);
     }
 
     .status-pill {
       margin-left: auto;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      color: #405466;
-      background: #f9fbfc;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-2);
       font-size: 12px;
     }
 
     .content {
       min-width: 0;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 335px;
+      grid-template-columns: minmax(0, 1fr) 345px;
       background: var(--panel);
     }
 
@@ -180,13 +218,15 @@ def render_app_html() -> str:
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #edf3f8;
-      color: #425566;
+      background: #1b2126;
+      color: #b7c3cc;
       font-size: 12px;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
-    tr.selected { background: #e9f3ff; }
+    tr.selected { background: rgba(199, 243, 10, 0.12); }
 
     .name {
       max-width: 260px;
@@ -207,14 +247,15 @@ def render_app_html() -> str:
       position: relative;
       width: 150px;
       height: 22px;
-      border: 1px solid #adc4d7;
-      background: #edf2f7;
+      border: 1px solid #313b43;
+      background: #14181c;
       overflow: hidden;
+      border-radius: 999px;
     }
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--blue-dark), var(--blue));
+      background: linear-gradient(90deg, var(--accent-strong), var(--accent));
     }
 
     .progress.seeding .progress-fill {
@@ -226,30 +267,62 @@ def render_app_html() -> str:
       inset: 0;
       display: grid;
       place-items: center;
-      color: #11283a;
-      font-size: 12px;
+      color: #101317;
+      font-size: 11px;
       font-weight: 700;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
     }
 
     .side-panel {
       min-width: 0;
       overflow: auto;
-      background: #fbfcfd;
-      padding: 12px;
+      background: #151a1f;
+      padding: 14px;
     }
 
     .panel-title {
       margin: 4px 0 10px;
-      color: #2f4050;
+      color: #e6edf2;
       font-size: 13px;
       font-weight: 800;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
     }
+
+    .panel-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .panel-tab {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .panel-tab.active {
+      background: rgba(199, 243, 10, 0.15);
+      color: var(--text);
+      border-color: rgba(199, 243, 10, 0.45);
+      box-shadow: inset 0 0 0 1px rgba(199, 243, 10, 0.25);
+    }
+
+    .panel-section { display: none; }
+    .panel-section.active { display: block; }
 
     .form-section {
       margin-bottom: 13px;
-      padding: 10px;
+      padding: 12px;
       border: 1px solid var(--line);
-      background: white;
+      background: var(--panel);
+      border-radius: 12px;
     }
 
     .form-section summary {
@@ -261,18 +334,25 @@ def render_app_html() -> str:
     label {
       display: block;
       margin-top: 8px;
-      color: #4d5e70;
+      color: #b7c3cc;
       font-size: 12px;
       font-weight: 700;
+      letter-spacing: 0.2px;
     }
 
     input {
       width: 100%;
       margin-top: 4px;
-      padding: 7px 8px;
+      padding: 8px 10px;
       border: 1px solid var(--line);
-      border-radius: 3px;
+      border-radius: 8px;
       font: inherit;
+      background: #11161a;
+      color: var(--text);
+    }
+
+    input::placeholder {
+      color: #6f7a83;
     }
 
     .path-control {
@@ -286,13 +366,13 @@ def render_app_html() -> str:
 
     .path-button {
       min-width: 70px;
-      height: 31px;
+      height: 34px;
       margin-top: 4px;
       padding: 0 9px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      background: #f9fbfc;
-      color: #34495e;
+      border-radius: 8px;
+      background: #1a2026;
+      color: var(--text);
       font: inherit;
       font-weight: 700;
       cursor: pointer;
@@ -300,8 +380,8 @@ def render_app_html() -> str:
 
     .path-button:hover,
     .tool-button:hover {
-      background: #edf5ff;
-      border-color: #9fc5e8;
+      background: #202830;
+      border-color: #3a4650;
     }
 
     .form-actions {
@@ -313,7 +393,7 @@ def render_app_html() -> str:
     .message {
       min-height: 18px;
       margin-top: 8px;
-      color: #35556e;
+      color: #b7c3cc;
       font-size: 12px;
       line-height: 1.35;
     }
@@ -321,32 +401,33 @@ def render_app_html() -> str:
     .details {
       display: grid;
       grid-template-rows: auto 1fr;
-      background: #fbfcfd;
+      background: #14181c;
       border-top: 1px solid var(--line);
     }
 
     .tabs {
       display: flex;
       gap: 2px;
-      height: 36px;
+      height: 40px;
       padding: 0 12px;
       align-items: center;
       border-bottom: 1px solid var(--line);
-      background: #f2f5f8;
+      background: #14181c;
     }
 
     .tab {
       padding: 7px 11px;
-      border-radius: 4px 4px 0 0;
-      color: #435466;
+      border-radius: 8px 8px 0 0;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 700;
     }
 
     .tab.active {
-      background: white;
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-bottom-color: white;
+      border-bottom-color: var(--panel);
+      color: var(--text);
     }
 
     .detail-grid {
@@ -364,12 +445,13 @@ def render_app_html() -> str:
       min-height: 58px;
       padding: 8px;
       border: 1px solid var(--line);
-      background: white;
+      background: var(--panel);
+      border-radius: 10px;
     }
 
     .piece {
       min-height: 13px;
-      background: #dfe7ee;
+      background: #222a31;
     }
 
     .piece.available { background: var(--green); }
@@ -381,7 +463,8 @@ def render_app_html() -> str:
       gap: 8px 12px;
       padding: 10px;
       border: 1px solid var(--line);
-      background: white;
+      background: var(--panel);
+      border-radius: 10px;
     }
 
     .stat-label {
@@ -409,9 +492,10 @@ def render_app_html() -> str:
     }
 
     .peer-list li.selected {
-      background: #e9f3ff;
-      outline: 1px solid #9fc5e8;
+      background: rgba(199, 243, 10, 0.1);
+      outline: 1px solid rgba(199, 243, 10, 0.35);
       padding: 6px;
+      border-radius: 8px;
     }
 
     .job-meta {
@@ -433,12 +517,12 @@ def render_app_html() -> str:
     }
 
     .job-actions button {
-      height: 26px;
-      padding: 0 8px;
+      height: 28px;
+      padding: 0 10px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      background: #f9fbfc;
-      color: #34495e;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
       font: inherit;
       font-weight: 700;
       cursor: pointer;
@@ -453,15 +537,47 @@ def render_app_html() -> str:
 
     @media (max-width: 1000px) {
       .app { grid-template-columns: 1fr; }
-      .sidebar { display: none; }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: -260px;
+        width: 240px;
+        height: 100vh;
+        border-right: 1px solid var(--line);
+        box-shadow: 10px 0 24px rgba(0, 0, 0, 0.35);
+        z-index: 9;
+        transition: left 0.2s ease;
+      }
+      .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
       .content { grid-template-columns: 1fr; }
       .side-panel { border-top: 1px solid var(--line); }
       .main { grid-template-rows: auto minmax(360px, 1fr) 340px; }
       .detail-grid { grid-template-columns: 1fr; }
+      .toolbar { flex-wrap: wrap; justify-content: flex-start; }
+      .status-pill { margin-left: 0; }
+    }
+
+    @media (max-width: 720px) {
+      .toolbar { gap: 6px; }
+      .tool-button.text { min-width: unset; padding: 0 8px; }
+      .content { grid-template-columns: 1fr; }
+      .table-wrap { border-right: none; }
+      table { min-width: 640px; }
+      .panel-tabs { grid-template-columns: 1fr; }
+      .detail-grid { padding: 10px; }
+    }
+
+    @media (max-width: 520px) {
+      body { font-size: 12px; }
+      .toolbar { padding: 10px; }
+      .tool-button { height: 30px; }
+      .status-pill { width: 100%; text-align: center; }
+      table { min-width: 560px; }
     }
   </style>
 </head>
 <body>
+  <div class="nav-scrim" id="navScrim" onclick="toggleSidebar(false)"></div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">C</span><span>ChunkShare</span></div>
@@ -479,6 +595,7 @@ def render_app_html() -> str:
 
     <main class="main">
       <header class="toolbar">
+        <button type="button" class="menu-toggle" aria-label="Open menu" onclick="toggleSidebar()">☰</button>
         <button type="button" class="tool-button primary" title="Refresh" onclick="loadStatus()">R</button>
         <button type="button" class="tool-button text" onclick="focusPanel('metaDetails')">Metadata</button>
         <button type="button" class="tool-button text" onclick="focusPanel('seedDetails')">Seed</button>
@@ -516,6 +633,11 @@ def render_app_html() -> str:
         <aside class="side-panel">
           <div class="panel-title">Actions</div>
 
+          <div class="panel-tabs" role="tablist" aria-label="Seed or leech">
+            <button type="button" class="panel-tab" data-panel-tab="seed">Seeding</button>
+            <button type="button" class="panel-tab" data-panel-tab="leech">Leeching</button>
+          </div>
+
           <details class="form-section" id="metaDetails">
             <summary>Create Metadata</summary>
             <label>File to share</label>
@@ -536,57 +658,61 @@ def render_app_html() -> str:
             <div class="message" id="metaMessage"></div>
           </details>
 
-          <details class="form-section" id="seedDetails" open>
-            <summary>Seed Complete File</summary>
-            <label>Tracker URL</label>
-            <input id="seedTracker">
-            <label>.mtorrent path</label>
-            <div class="path-control">
-              <input id="seedTorrent" value="torrents/hello.txt.mtorrent">
-              <button type="button" class="path-button" onclick="pickPath('seedTorrent', 'torrent_file', { inspect: true })">Select</button>
-            </div>
-            <label>Complete file path</label>
-            <div class="path-control">
-              <input id="seedFile" value="sample_files/hello.txt">
-              <button type="button" class="path-button" onclick="pickPath('seedFile', 'source_file')">Select</button>
-            </div>
-            <label>This peer IP</label>
-            <input id="seedHost">
-            <label>Upload port</label>
-            <input id="seedPort" value="9001">
-            <label>Peer name</label>
-            <input id="seedPeerId" value="seeder-1">
-            <div class="form-actions">
-              <button type="button" class="tool-button text primary" onclick="startSeed()">Start Seed</button>
-            </div>
-            <div class="message" id="seedMessage"></div>
-          </details>
+          <div class="panel-section" data-panel-section="seed">
+            <details class="form-section" id="seedDetails" open>
+              <summary>Seed Complete File</summary>
+              <label>Tracker URL</label>
+              <input id="seedTracker">
+              <label>.mtorrent path</label>
+              <div class="path-control">
+                <input id="seedTorrent" value="torrents/hello.txt.mtorrent">
+                <button type="button" class="path-button" onclick="pickPath('seedTorrent', 'torrent_file', { inspect: true })">Select</button>
+              </div>
+              <label>Complete file path</label>
+              <div class="path-control">
+                <input id="seedFile" value="sample_files/hello.txt">
+                <button type="button" class="path-button" onclick="pickPath('seedFile', 'source_file')">Select</button>
+              </div>
+              <label>This peer IP</label>
+              <input id="seedHost">
+              <label>Upload port</label>
+              <input id="seedPort" value="9001">
+              <label>Peer name</label>
+              <input id="seedPeerId" value="seeder-1">
+              <div class="form-actions">
+                <button type="button" class="tool-button text primary" onclick="startSeed()">Start Seed</button>
+              </div>
+              <div class="message" id="seedMessage"></div>
+            </details>
+          </div>
 
-          <details class="form-section" id="leechDetails">
-            <summary>Download File</summary>
-            <label>Tracker URL</label>
-            <input id="leechTracker">
-            <label>.mtorrent path</label>
-            <div class="path-control">
-              <input id="leechTorrent" value="torrents/hello.txt.mtorrent">
-              <button type="button" class="path-button" onclick="pickPath('leechTorrent', 'torrent_file', { inspect: true })">Select</button>
-            </div>
-            <label>Output file path</label>
-            <div class="path-control">
-              <input id="leechOutput" value="downloads/hello.txt">
-              <button type="button" class="path-button" onclick="pickPath('leechOutput', 'download_output')">Save As</button>
-            </div>
-            <label>This peer IP</label>
-            <input id="leechHost">
-            <label>Upload port</label>
-            <input id="leechPort" value="9002">
-            <label>Peer name</label>
-            <input id="leechPeerId" value="leecher-1">
-            <div class="form-actions">
-              <button type="button" class="tool-button text primary" onclick="startLeech()">Start Leech</button>
-            </div>
-            <div class="message" id="leechMessage"></div>
-          </details>
+          <div class="panel-section" data-panel-section="leech">
+            <details class="form-section" id="leechDetails">
+              <summary>Download File</summary>
+              <label>Tracker URL</label>
+              <input id="leechTracker">
+              <label>.mtorrent path</label>
+              <div class="path-control">
+                <input id="leechTorrent" value="torrents/hello.txt.mtorrent">
+                <button type="button" class="path-button" onclick="pickPath('leechTorrent', 'torrent_file', { inspect: true })">Select</button>
+              </div>
+              <label>Output file path</label>
+              <div class="path-control">
+                <input id="leechOutput" value="downloads/hello.txt">
+                <button type="button" class="path-button" onclick="pickPath('leechOutput', 'download_output')">Save As</button>
+              </div>
+              <label>This peer IP</label>
+              <input id="leechHost">
+              <label>Upload port</label>
+              <input id="leechPort" value="9002">
+              <label>Peer name</label>
+              <input id="leechPeerId" value="leecher-1">
+              <div class="form-actions">
+                <button type="button" class="tool-button text primary" onclick="startLeech()">Start Leech</button>
+              </div>
+              <div class="message" id="leechMessage"></div>
+            </details>
+          </div>
 
           <div class="form-section">
             <div class="panel-title">Local Jobs</div>
@@ -971,8 +1097,38 @@ def render_app_html() -> str:
       }
     }
 
+    function setPanelTab(tab) {
+      const tabs = document.querySelectorAll("[data-panel-tab]");
+      const sections = document.querySelectorAll("[data-panel-section]");
+      for (const item of tabs) {
+        item.classList.toggle("active", item.dataset.panelTab === tab);
+      }
+      for (const section of sections) {
+        const isActive = section.dataset.panelSection === tab;
+        section.classList.toggle("active", isActive);
+        const details = section.querySelector("details");
+        if (details) details.open = isActive;
+      }
+      if (tab === "seed" || tab === "leech") {
+        history.replaceState(null, "", `#${tab}`);
+      }
+    }
+
+    function toggleSidebar(forceOpen) {
+      const sidebar = document.querySelector(".sidebar");
+      const scrim = document.getElementById("navScrim");
+      const shouldOpen = forceOpen !== undefined ? forceOpen : !sidebar.classList.contains("open");
+      sidebar.classList.toggle("open", shouldOpen);
+      scrim.classList.toggle("visible", shouldOpen);
+    }
+
     function focusPanel(id) {
       const panel = document.getElementById(id);
+      if (id === "seedDetails") {
+        setPanelTab("seed");
+      } else if (id === "leechDetails") {
+        setPanelTab("leech");
+      }
       for (const item of document.querySelectorAll(".side-panel details.form-section")) {
         item.open = item.id === id;
       }
@@ -993,6 +1149,12 @@ def render_app_html() -> str:
         document.getElementById("hubStatus").textContent = "Dashboard cannot reach app server";
       }
     }
+
+    const tabButtons = document.querySelectorAll("[data-panel-tab]");
+    for (const button of tabButtons) {
+      button.addEventListener("click", () => setPanelTab(button.dataset.panelTab));
+    }
+    setPanelTab(location.hash === "#leech" ? "leech" : "seed");
 
     loadStatus();
     setInterval(loadStatus, 2000);

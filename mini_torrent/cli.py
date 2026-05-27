@@ -71,6 +71,11 @@ def add_peer_arguments(parser: argparse.ArgumentParser) -> None:
     """Add shared options used by seed and leech commands."""
     parser.add_argument("--tracker", default=DEFAULT_TRACKER_URL)
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--listen-host",
+        default=None,
+        help="Bind address for the peer server (defaults to --host)",
+    )
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--peer-id", help="Friendly peer name")
 
@@ -96,8 +101,17 @@ def command_seed(args: argparse.Namespace) -> None:
     validate_file_against_metadata(args.file, meta)
     storage = ChunkStorage(meta, args.file, complete_source=True)
     peer_id = args.peer_id or f"seed-{uuid.uuid4().hex[:8]}"
-    server = start_peer_server(storage, args.host, args.port)
-    print(f"Seeder {peer_id} running at http://{args.host}:{args.port}")
+    listen_host = args.listen_host or args.host
+    server = start_peer_server(storage, listen_host, args.port)
+    print(
+        "Seeder {peer_id} listening at http://{listen}:{port} "
+        "(announcing {announce}:{port})".format(
+            peer_id=peer_id,
+            listen=listen_host,
+            announce=args.host,
+            port=args.port,
+        )
+    )
     try:
         while True:
             announce_to_tracker(
@@ -126,8 +140,17 @@ def command_leech(args: argparse.Namespace) -> None:
     output = Path(args.output) if args.output else Path("downloads") / meta.filename
     storage = ChunkStorage(meta, output, complete_source=False)
     peer_id = args.peer_id or f"leech-{uuid.uuid4().hex[:8]}"
-    server = start_peer_server(storage, args.host, args.port)
-    print(f"Leecher {peer_id} running at http://{args.host}:{args.port}")
+    listen_host = args.listen_host or args.host
+    server = start_peer_server(storage, listen_host, args.port)
+    print(
+        "Leecher {peer_id} listening at http://{listen}:{port} "
+        "(announcing {announce}:{port})".format(
+            peer_id=peer_id,
+            listen=listen_host,
+            announce=args.host,
+            port=args.port,
+        )
+    )
     print(f"Downloading to {output}")
     try:
         complete = download_until_complete(

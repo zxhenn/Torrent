@@ -27,18 +27,21 @@ def render_dashboard_html() -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ChunkShare Dashboard</title>
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
+
     :root {
-      --line: #cfd7df;
-      --line-soft: #e6ebf0;
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --text: #1f2933;
-      --muted: #6b7785;
-      --blue: #4f8edc;
-      --blue-dark: #2f6fb7;
-      --green: #8fcf5b;
-      --green-dark: #5fa431;
-      --yellow: #e2b84b;
+      --line: #2a3238;
+      --line-soft: #232a30;
+      --bg: #0f1215;
+      --panel: #161a1e;
+      --panel-2: #1c2126;
+      --text: #e7edf2;
+      --muted: #9aa6af;
+      --accent: #c7f30a;
+      --accent-strong: #a3d906;
+      --green: #8fe53d;
+      --green-dark: #53b81f;
+      --yellow: #f0d14a;
     }
 
     * {
@@ -47,9 +50,9 @@ def render_dashboard_html() -> str:
 
     body {
       margin: 0;
-      background: var(--bg);
+      background: radial-gradient(1200px 520px at 10% -10%, #1f262c 0%, #11161a 45%, #0b0f12 100%);
       color: var(--text);
-      font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Space Grotesk", "Segoe UI", Arial, sans-serif;
       font-size: 14px;
     }
 
@@ -60,9 +63,9 @@ def render_dashboard_html() -> str:
     }
 
     .sidebar {
-      background: #edf1f5;
+      background: #12161a;
       border-right: 1px solid var(--line);
-      padding: 12px;
+      padding: 14px 12px;
     }
 
     .brand {
@@ -71,7 +74,8 @@ def render_dashboard_html() -> str:
       gap: 8px;
       height: 36px;
       font-weight: 700;
-      color: #203348;
+      color: #f1f5f8;
+      letter-spacing: 0.3px;
     }
 
     .brand-mark {
@@ -79,10 +83,11 @@ def render_dashboard_html() -> str:
       place-items: center;
       width: 22px;
       height: 22px;
-      border-radius: 50%;
-      background: var(--green);
-      color: white;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #f4ff8a);
+      color: #121417;
       font-size: 13px;
+      box-shadow: 0 0 12px rgba(199, 243, 10, 0.35);
     }
 
     .nav {
@@ -93,14 +98,15 @@ def render_dashboard_html() -> str:
       display: flex;
       justify-content: space-between;
       padding: 9px 10px;
-      border-radius: 4px;
-      color: #33475b;
+      border-radius: 8px;
+      color: #c7d2dc;
     }
 
     .nav-item.active {
-      background: #d8e7f8;
-      color: #174c87;
+      background: rgba(199, 243, 10, 0.12);
+      color: #f1f5f8;
       font-weight: 600;
+      box-shadow: inset 2px 0 0 var(--accent);
     }
 
     .nav-count {
@@ -117,7 +123,7 @@ def render_dashboard_html() -> str:
       display: flex;
       align-items: center;
       gap: 8px;
-      height: 46px;
+      height: 52px;
       padding: 0 14px;
       background: var(--panel);
       border-bottom: 1px solid var(--line);
@@ -129,19 +135,19 @@ def render_dashboard_html() -> str:
       width: 30px;
       height: 30px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      background: #f9fbfc;
-      color: #415365;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
       font-weight: 700;
     }
 
     .status-pill {
       margin-left: auto;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border: 1px solid var(--line);
-      border-radius: 4px;
-      color: #405466;
-      background: #f9fbfc;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-2);
       font-size: 12px;
     }
 
@@ -167,14 +173,16 @@ def render_dashboard_html() -> str:
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #eef3f7;
-      color: #415365;
+      background: #1b2126;
+      color: #b7c3cc;
       font-size: 12px;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
     tr.selected {
-      background: #e9f2ff;
+      background: rgba(199, 243, 10, 0.12);
     }
 
     .name {
@@ -196,14 +204,15 @@ def render_dashboard_html() -> str:
       position: relative;
       height: 22px;
       width: 160px;
-      border: 1px solid #afc4d7;
-      background: #eef3f7;
+      border: 1px solid #313b43;
+      background: #14181c;
       overflow: hidden;
+      border-radius: 999px;
     }
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--blue), #82b7f0);
+      background: linear-gradient(90deg, var(--accent-strong), var(--accent));
     }
 
     .progress.seeding .progress-fill {
@@ -215,15 +224,16 @@ def render_dashboard_html() -> str:
       inset: 0;
       display: grid;
       place-items: center;
-      color: #123;
+      color: #101317;
       font-size: 12px;
       font-weight: 600;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
     }
 
     .details {
       display: grid;
       grid-template-rows: auto 1fr;
-      background: #fbfcfd;
+      background: #14181c;
       border-top: 1px solid var(--line);
     }
 
@@ -231,24 +241,25 @@ def render_dashboard_html() -> str:
       display: flex;
       align-items: center;
       gap: 2px;
-      height: 36px;
+      height: 40px;
       padding: 0 12px;
       border-bottom: 1px solid var(--line);
-      background: #f2f5f8;
+      background: #14181c;
     }
 
     .tab {
       padding: 7px 11px;
-      border-radius: 4px 4px 0 0;
-      color: #435466;
+      border-radius: 8px 8px 0 0;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 600;
     }
 
     .tab.active {
-      background: white;
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-bottom-color: white;
+      border-bottom-color: var(--panel);
+      color: var(--text);
     }
 
     .detail-grid {
@@ -273,12 +284,13 @@ def render_dashboard_html() -> str:
       min-height: 60px;
       padding: 8px;
       border: 1px solid var(--line);
-      background: white;
+      background: var(--panel);
+      border-radius: 10px;
     }
 
     .piece {
       min-height: 14px;
-      background: #dfe6ed;
+      background: #222a31;
     }
 
     .piece.available {
@@ -296,7 +308,8 @@ def render_dashboard_html() -> str:
       align-content: start;
       padding: 10px;
       border: 1px solid var(--line);
-      background: white;
+      background: var(--panel);
+      border-radius: 10px;
     }
 
     .stat-label {
@@ -330,6 +343,19 @@ def render_dashboard_html() -> str:
       .detail-grid {
         grid-template-columns: 1fr;
       }
+    }
+
+    @media (max-width: 720px) {
+      .toolbar { flex-wrap: wrap; gap: 6px; height: auto; padding: 10px; }
+      .status-pill { margin-left: 0; }
+      table { min-width: 640px; }
+      .detail-grid { padding: 10px; }
+    }
+
+    @media (max-width: 520px) {
+      body { font-size: 12px; }
+      .status-pill { width: 100%; text-align: center; }
+      table { min-width: 560px; }
     }
   </style>
 </head>

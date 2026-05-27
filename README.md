@@ -172,6 +172,12 @@ Quick troubleshooting:
 - If the hub shows the seeder and leecher but no chunks download, open `http://SEEDER_IP:SEEDER_PORT/health` from the leecher laptop.
 - If that health URL fails, check the seeder's `This peer IP`, upload port, and Windows Firewall.
 
+## One-Laptop Docker Demo
+
+If you do not have a second device, you can simulate a leecher in Docker while keeping the app dashboard on the host.
+
+See [docs/11_DOCKER_DEMO.md](docs/11_DOCKER_DEMO.md).
+
 ## Build A Windows EXE
 
 Folder build:

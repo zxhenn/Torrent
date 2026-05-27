@@ -1,12 +1,9 @@
 {
   "filename": "hello.txt",
-  "file_size": 104,
-  "chunk_size": 32,
-  "file_hash": "25029445677b81ce0a75e0714aa3e2d3824438ae44f07847a717407d9a631a1e",
+  "file_size": 106,
+  "chunk_size": 1048576,
+  "file_hash": "5d097a94ed68894181b3f774c7ff67f88ce2041c12692d6a440cf8645560fbbb",
   "chunk_hashes": [
-    "9b65f859e787b63e4506e2baf0302c6fd2cff8fb8d93b2d4cbc9266de236a05a",
-    "41c90311d0df6dc71b5aeed9c946955c8980c765d0624a05002d0bfa7a02d78a",
-    "1ccce6d67d0743d8413d86b60cddfc644ea5c8ca5f84a739f1e649843747b38b",
-    "b0f63fdba27a7b332b6d0ff2443dadbdb4a62f5281016cb72ff8775dc77006da"
+    "5d097a94ed68894181b3f774c7ff67f88ce2041c12692d6a440cf8645560fbbb"
   ]
 }
