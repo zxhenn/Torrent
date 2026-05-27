@@ -4,7 +4,7 @@ ChunkShare can run with Python, but a Windows `.exe` is easier for demos.
 
 The executable is built with PyInstaller.
 
-## Build Command
+## Folder Build
 
 From the project root:
 
@@ -35,15 +35,64 @@ The build script also copies:
 
 This makes the `dist/ChunkShare/` folder easier to share for demos.
 
+## One-File Build
+
+If you want to send only one executable file:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_onefile_exe.ps1
+```
+
+Or double-click:
+
+```text
+build_onefile_exe.bat
+```
+
+Output:
+
+```text
+dist/ChunkShare.exe
+```
+
+This version can be sent by itself. The seeder and leechers still need the same `.mtorrent` file for the file being shared.
+
 ## How To Share With Teammates
 
-Share the whole folder:
+For the folder build, share the whole folder:
 
 ```text
 dist/ChunkShare/
 ```
 
 Do not share only `ChunkShare.exe` if you want the sample files and docs included.
+
+For the one-file build, share:
+
+```text
+dist/ChunkShare.exe
+```
+
+Also send the `.mtorrent` file for the file you want them to download.
+
+## If The EXE Does Not Open
+
+Most common cause:
+
+```text
+You sent dist/ChunkShare/ChunkShare.exe without the _internal folder.
+```
+
+Fix:
+
+- Send the whole `dist/ChunkShare/` folder, or
+- Use the one-file build at `dist/ChunkShare.exe`.
+
+Other possible fixes:
+
+- Right-click the EXE, choose `Properties`, then check `Unblock` if Windows shows it.
+- Allow `ChunkShare.exe` through Windows Firewall.
+- Keep the app window open while sharing or downloading.
 
 ## Important Notes
 
@@ -58,4 +107,3 @@ Do not share only `ChunkShare.exe` if you want the sample files and docs include
 That can happen because the executable is locally built and unsigned.
 
 For a class demo, this is usually fine. For public release, the executable would need signing, which is outside the scope of this project.
-

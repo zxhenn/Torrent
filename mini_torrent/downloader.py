@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import random
+import threading
 import time
+from collections.abc import Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -29,8 +31,14 @@ def download_until_complete(
     listen_host: str,
     listen_port: int,
     max_rounds: int = 60,
+    stop_event: threading.Event | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> bool:
     """Download missing chunks from peers until the file is complete."""
+    def report(message: str) -> None:
+        if progress_callback:
+            progress_callback(message)
+
     announce_to_tracker(
         tracker_url,
         meta.file_hash,
@@ -44,33 +52,69 @@ def download_until_complete(
     )
 
     for round_number in range(1, max_rounds + 1):
+        if stop_event and stop_event.is_set():
+            report("Download stopped by user.")
+            return False
+
         missing = storage.missing_chunks()
         if not missing:
             return storage.verify_complete_file()
 
-        peers = [
-            peer
-            for peer in get_peers(tracker_url, meta.file_hash)
-            if peer.get("peer_id") != peer_id
-        ]
+        peers = []
+        try:
+            peers = [
+                peer
+                for peer in get_peers(tracker_url, meta.file_hash)
+                if peer.get("peer_id") != peer_id
+            ]
+        except (HTTPError, URLError, TimeoutError, OSError) as exc:
+            report(f"Could not reach tracker: {exc}")
+            if stop_event:
+                stop_event.wait(2)
+            else:
+                time.sleep(2)
+            continue
+
         random.shuffle(peers)
+        report(
+            f"Round {round_number}: found {len(peers)} peer(s), "
+            f"missing {len(missing)} chunk(s)."
+        )
 
         made_progress = False
+        last_error = ""
         for chunk_index in missing:
+            if stop_event and stop_event.is_set():
+                report("Download stopped by user.")
+                return False
+
             candidates = [
                 peer for peer in peers if chunk_index in set(peer.get("chunks", []))
             ]
             for peer in candidates:
+                if stop_event and stop_event.is_set():
+                    report("Download stopped by user.")
+                    return False
+
                 try:
                     data = request_chunk(peer, meta, chunk_index)
-                except (HTTPError, URLError, TimeoutError, OSError):
+                except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                    last_error = (
+                        f"Could not get chunk {chunk_index + 1} "
+                        f"from {peer.get('peer_id')}: {exc}"
+                    )
                     continue
+                if stop_event and stop_event.is_set():
+                    report("Download stopped by user.")
+                    return False
                 if storage.write_chunk(chunk_index, data):
                     made_progress = True
-                    print(
+                    message = (
                         f"Downloaded chunk {chunk_index + 1}/{meta.total_chunks} "
                         f"from {peer['peer_id']}"
                     )
+                    print(message)
+                    report(message)
                     announce_to_tracker(
                         tracker_url,
                         meta.file_hash,
@@ -85,10 +129,19 @@ def download_until_complete(
                     break
 
         if not made_progress:
-            print(
+            message = (
                 f"No new chunks found in round {round_number}. "
                 "Waiting for seeders or leechers..."
             )
-            time.sleep(2)
+            if not peers:
+                message = "No peers found. Check tracker URL and seeder status."
+            elif last_error:
+                message = f"{last_error}. Check peer IP, upload port, and firewall."
+            print(message)
+            report(message)
+            if stop_event:
+                stop_event.wait(2)
+            else:
+                time.sleep(2)
 
     return storage.verify_complete_file()

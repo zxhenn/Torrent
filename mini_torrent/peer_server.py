@@ -13,6 +13,8 @@ from .storage import ChunkStorage
 class PeerHttpServer(ThreadingHTTPServer):
     """HTTP server carrying one ChunkStorage instance."""
 
+    allow_reuse_address = True
+
     def __init__(self, server_address: tuple[str, int], storage: ChunkStorage) -> None:
         """Create a peer server bound to one local storage object."""
         super().__init__(server_address, PeerRequestHandler)
@@ -88,4 +90,3 @@ def start_peer_server(storage: ChunkStorage, host: str, port: int) -> PeerHttpSe
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server
-

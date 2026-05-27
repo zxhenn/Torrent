@@ -140,6 +140,10 @@ def render_app_html() -> str:
       color: var(--red);
     }
 
+    .tool-button.warning {
+      color: #8a6500;
+    }
+
     .status-pill {
       margin-left: auto;
       padding: 6px 10px;
@@ -271,6 +275,35 @@ def render_app_html() -> str:
       font: inherit;
     }
 
+    .path-control {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: end;
+    }
+
+    .path-control input { min-width: 0; }
+
+    .path-button {
+      min-width: 70px;
+      height: 31px;
+      margin-top: 4px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #f9fbfc;
+      color: #34495e;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .path-button:hover,
+    .tool-button:hover {
+      background: #edf5ff;
+      border-color: #9fc5e8;
+    }
+
     .form-actions {
       display: flex;
       gap: 8px;
@@ -375,6 +408,49 @@ def render_app_html() -> str:
       border-bottom: 1px solid var(--line-soft);
     }
 
+    .peer-list li.selected {
+      background: #e9f3ff;
+      outline: 1px solid #9fc5e8;
+      padding: 6px;
+    }
+
+    .job-meta {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .job-message {
+      margin-top: 4px;
+      color: #35556e;
+      line-height: 1.35;
+    }
+
+    .job-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .job-actions button {
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #f9fbfc;
+      color: #34495e;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .job-actions button:disabled {
+      color: #9aa6b2;
+      cursor: default;
+    }
+
+    .job-actions button.danger { color: var(--red); }
+
     @media (max-width: 1000px) {
       .app { grid-template-columns: 1fr; }
       .sidebar { display: none; }
@@ -403,11 +479,14 @@ def render_app_html() -> str:
 
     <main class="main">
       <header class="toolbar">
-        <button class="tool-button primary" title="Refresh" onclick="loadStatus()">R</button>
-        <button class="tool-button text" onclick="focusPanel('seedDetails')">Seed</button>
-        <button class="tool-button text" onclick="focusPanel('leechDetails')">Leech</button>
-        <button class="tool-button text" onclick="focusPanel('metaDetails')">Metadata</button>
-        <button class="tool-button text" onclick="copyTrackerUrl()">Copy URL</button>
+        <button type="button" class="tool-button primary" title="Refresh" onclick="loadStatus()">R</button>
+        <button type="button" class="tool-button text" onclick="focusPanel('metaDetails')">Metadata</button>
+        <button type="button" class="tool-button text" onclick="focusPanel('seedDetails')">Seed</button>
+        <button type="button" class="tool-button text" onclick="focusPanel('leechDetails')">Leech</button>
+        <button type="button" class="tool-button text" onclick="jobAction('resume')">Resume</button>
+        <button type="button" class="tool-button text warning" onclick="jobAction('stop')">Stop</button>
+        <button type="button" class="tool-button text danger" onclick="jobAction('delete')">Delete</button>
+        <button type="button" class="tool-button text" onclick="copyTrackerUrl()">Copy URL</button>
         <span class="status-pill" id="hubStatus">Starting...</span>
       </header>
 
@@ -440,13 +519,19 @@ def render_app_html() -> str:
           <details class="form-section" id="metaDetails">
             <summary>Create Metadata</summary>
             <label>File to share</label>
-            <input id="metaFile" value="sample_files/hello.txt">
+            <div class="path-control">
+              <input id="metaFile" value="sample_files/hello.txt">
+              <button type="button" class="path-button" onclick="pickPath('metaFile', 'source_file')">Select</button>
+            </div>
             <label>Chunk size in bytes</label>
-            <input id="metaChunkSize" value="262144">
+            <input id="metaChunkSize" value="1048576">
             <label>Output .mtorrent path</label>
-            <input id="metaOutput" value="torrents/hello.txt.mtorrent">
+            <div class="path-control">
+              <input id="metaOutput" value="torrents/hello.txt.mtorrent">
+              <button type="button" class="path-button" onclick="pickPath('metaOutput', 'save_torrent')">Save As</button>
+            </div>
             <div class="form-actions">
-              <button class="tool-button text primary" onclick="createMetadata()">Create</button>
+              <button type="button" class="tool-button text primary" onclick="createMetadata()">Create</button>
             </div>
             <div class="message" id="metaMessage"></div>
           </details>
@@ -456,9 +541,15 @@ def render_app_html() -> str:
             <label>Tracker URL</label>
             <input id="seedTracker">
             <label>.mtorrent path</label>
-            <input id="seedTorrent" value="torrents/hello.txt.mtorrent">
+            <div class="path-control">
+              <input id="seedTorrent" value="torrents/hello.txt.mtorrent">
+              <button type="button" class="path-button" onclick="pickPath('seedTorrent', 'torrent_file', { inspect: true })">Select</button>
+            </div>
             <label>Complete file path</label>
-            <input id="seedFile" value="sample_files/hello.txt">
+            <div class="path-control">
+              <input id="seedFile" value="sample_files/hello.txt">
+              <button type="button" class="path-button" onclick="pickPath('seedFile', 'source_file')">Select</button>
+            </div>
             <label>This peer IP</label>
             <input id="seedHost">
             <label>Upload port</label>
@@ -466,7 +557,7 @@ def render_app_html() -> str:
             <label>Peer name</label>
             <input id="seedPeerId" value="seeder-1">
             <div class="form-actions">
-              <button class="tool-button text primary" onclick="startSeed()">Start Seed</button>
+              <button type="button" class="tool-button text primary" onclick="startSeed()">Start Seed</button>
             </div>
             <div class="message" id="seedMessage"></div>
           </details>
@@ -476,9 +567,15 @@ def render_app_html() -> str:
             <label>Tracker URL</label>
             <input id="leechTracker">
             <label>.mtorrent path</label>
-            <input id="leechTorrent" value="torrents/hello.txt.mtorrent">
+            <div class="path-control">
+              <input id="leechTorrent" value="torrents/hello.txt.mtorrent">
+              <button type="button" class="path-button" onclick="pickPath('leechTorrent', 'torrent_file', { inspect: true })">Select</button>
+            </div>
             <label>Output file path</label>
-            <input id="leechOutput" value="downloads/hello.txt">
+            <div class="path-control">
+              <input id="leechOutput" value="downloads/hello.txt">
+              <button type="button" class="path-button" onclick="pickPath('leechOutput', 'download_output')">Save As</button>
+            </div>
             <label>This peer IP</label>
             <input id="leechHost">
             <label>Upload port</label>
@@ -486,7 +583,7 @@ def render_app_html() -> str:
             <label>Peer name</label>
             <input id="leechPeerId" value="leecher-1">
             <div class="form-actions">
-              <button class="tool-button text primary" onclick="startLeech()">Start Leech</button>
+              <button type="button" class="tool-button text primary" onclick="startLeech()">Start Leech</button>
             </div>
             <div class="message" id="leechMessage"></div>
           </details>
@@ -520,6 +617,7 @@ def render_app_html() -> str:
 
   <script>
     let selectedHash = null;
+    let selectedPeerId = null;
     let latest = { tracker: { torrents: [] }, local_peers: [] };
 
     function escapeHtml(value) {
@@ -548,6 +646,90 @@ def render_app_html() -> str:
       }
       for (const id of ["seedHost", "leechHost"]) {
         if (!document.getElementById(id).value) document.getElementById(id).value = lanIp;
+      }
+    }
+
+    function pathBaseName(path) {
+      return String(path || "").split(/[\\\\/]/).filter(Boolean).pop() || "";
+    }
+
+    function torrentOutputFor(path) {
+      const filename = pathBaseName(path);
+      return filename ? `torrents/${filename}.mtorrent` : "torrents/file.mtorrent";
+    }
+
+    function shouldReplacePath(value, defaults) {
+      const text = String(value || "").trim();
+      return !text || defaults.includes(text.replaceAll("\\\\", "/"));
+    }
+
+    function formMessageForField(fieldId) {
+      if (fieldId.startsWith("meta")) return document.getElementById("metaMessage");
+      if (fieldId.startsWith("seed")) return document.getElementById("seedMessage");
+      return document.getElementById("leechMessage");
+    }
+
+    function autoFillMetadataOutput(sourcePath) {
+      const output = document.getElementById("metaOutput");
+      if (shouldReplacePath(output.value, ["torrents/hello.txt.mtorrent"])) {
+        output.value = torrentOutputFor(sourcePath);
+      }
+    }
+
+    async function inspectTorrent(fieldId) {
+      const input = document.getElementById(fieldId);
+      const target = formMessageForField(fieldId);
+      if (!input.value.trim()) return null;
+
+      const data = await requestJson("/api/inspect-torrent", {
+        torrent_path: input.value,
+      });
+
+      if (fieldId === "leechTorrent") {
+        const output = document.getElementById("leechOutput");
+        if (shouldReplacePath(output.value, ["downloads/hello.txt", "downloads/downloaded-file"])) {
+          output.value = data.default_output_path;
+        }
+      }
+
+      target.textContent = `Loaded metadata for ${data.filename} (${data.total_chunks} chunks).`;
+      return data;
+    }
+
+    async function pickPath(fieldId, purpose, options = {}) {
+      const input = document.getElementById(fieldId);
+      const target = formMessageForField(fieldId);
+      const payload = {
+        purpose,
+        initial_path: input.value,
+      };
+
+      if (purpose === "save_torrent") {
+        payload.suggested_name = `${pathBaseName(document.getElementById("metaFile").value) || "file"}.mtorrent`;
+      }
+      if (purpose === "download_output") {
+        payload.suggested_name = pathBaseName(input.value) || "downloaded-file";
+      }
+
+      target.textContent = "Opening file picker...";
+      try {
+        const data = await requestJson("/api/pick-path", payload);
+        if (!data.path) {
+          target.textContent = "Selection cancelled.";
+          return;
+        }
+        input.value = data.path;
+
+        if (fieldId === "metaFile") {
+          autoFillMetadataOutput(data.path);
+        }
+        if (options.inspect) {
+          await inspectTorrent(fieldId);
+        } else {
+          target.textContent = `Selected ${data.path}.`;
+        }
+      } catch (error) {
+        target.textContent = error.message;
       }
     }
 
@@ -606,7 +788,7 @@ def render_app_html() -> str:
         return `<span class="${cls}"></span>`;
       }).join("");
       const peerLines = (torrent.peers || []).map((peer) => {
-        return `${escapeHtml(peer.peer_id)} (${peer.role}, ${peer.chunk_count}/${torrent.total_chunks || 0})`;
+        return `${escapeHtml(peer.peer_id)} (${peer.role}, ${peer.chunk_count}/${torrent.total_chunks || 0}) at ${escapeHtml(peer.host)}:${peer.port}, ${peer.updated_seconds_ago}s ago`;
       }).join("<br>");
       stats.innerHTML = `
         <div class="stat-label">Name</div><div class="stat-value">${escapeHtml(torrent.filename)}</div>
@@ -633,16 +815,41 @@ def render_app_html() -> str:
       const jobs = latest.local_peers || [];
       const list = document.getElementById("localJobs");
       if (!jobs.length) {
+        selectedPeerId = null;
         list.innerHTML = "<li>No local jobs yet.</li>";
         return;
       }
+      if (!selectedPeerId || !jobs.some((job) => job.peer_id === selectedPeerId)) {
+        selectedPeerId = jobs[0].peer_id;
+      }
       list.innerHTML = jobs.map((job) => `
-        <li>
+        <li class="${job.peer_id === selectedPeerId ? "selected" : ""}" data-select-peer="${escapeHtml(job.peer_id)}">
           <strong>${escapeHtml(job.peer_id)}</strong><br>
-          ${escapeHtml(job.role)} - ${escapeHtml(job.status)}<br>
-          ${job.available_chunks}/${job.total_chunks} chunks on port ${job.port}
+          <span class="job-meta">
+            ${escapeHtml(job.role)} - ${escapeHtml(job.status)}<br>
+            ${job.available_chunks}/${job.total_chunks} chunks (${pct(job.progress_percent)})<br>
+            ${escapeHtml(job.host)}:${job.port}
+          </span>
+          <div class="job-message">${escapeHtml(job.message || "No message yet.")}</div>
+          <div class="job-actions">
+            <button type="button" data-job-action="resume" data-peer-id="${escapeHtml(job.peer_id)}" ${job.can_resume ? "" : "disabled"}>Resume</button>
+            <button type="button" data-job-action="stop" data-peer-id="${escapeHtml(job.peer_id)}" ${job.can_stop ? "" : "disabled"}>Stop</button>
+            <button type="button" class="danger" data-job-action="delete" data-peer-id="${escapeHtml(job.peer_id)}">Delete</button>
+          </div>
         </li>
       `).join("");
+      for (const item of list.querySelectorAll("[data-select-peer]")) {
+        item.addEventListener("click", () => {
+          selectedPeerId = item.dataset.selectPeer;
+          renderJobs();
+        });
+      }
+      for (const button of list.querySelectorAll("[data-job-action]")) {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          jobAction(button.dataset.jobAction, button.dataset.peerId);
+        });
+      }
     }
 
     function selectTorrent(hash) {
@@ -663,6 +870,41 @@ def render_app_html() -> str:
       return data;
     }
 
+    function currentJobId() {
+      const jobs = latest.local_peers || [];
+      if (selectedPeerId && jobs.some((job) => job.peer_id === selectedPeerId)) {
+        return selectedPeerId;
+      }
+      if (jobs.length === 1) {
+        selectedPeerId = jobs[0].peer_id;
+        return selectedPeerId;
+      }
+      return "";
+    }
+
+    async function jobAction(action, peerId = "") {
+      const selected = peerId || currentJobId();
+      if (!selected) {
+        document.getElementById("hubStatus").textContent = "Select a local job first.";
+        return;
+      }
+      try {
+        const data = await requestJson("/api/job-action", {
+          action,
+          peer_id: selected,
+        });
+        if (action === "delete") {
+          selectedPeerId = null;
+        } else {
+          selectedPeerId = selected;
+        }
+        document.getElementById("hubStatus").textContent = `${data.action} ${data.peer_id}: ${data.status}`;
+        await loadStatus();
+      } catch (error) {
+        document.getElementById("hubStatus").textContent = error.message;
+      }
+    }
+
     async function createMetadata() {
       const target = document.getElementById("metaMessage");
       try {
@@ -671,6 +913,12 @@ def render_app_html() -> str:
           chunk_size: Number(document.getElementById("metaChunkSize").value),
           output_path: document.getElementById("metaOutput").value,
         });
+        document.getElementById("seedTorrent").value = data.output_path;
+        document.getElementById("leechTorrent").value = data.output_path;
+        document.getElementById("seedFile").value = document.getElementById("metaFile").value;
+        if (shouldReplacePath(document.getElementById("leechOutput").value, ["downloads/hello.txt", "downloads/downloaded-file"])) {
+          document.getElementById("leechOutput").value = `downloads/${pathBaseName(document.getElementById("metaFile").value)}`;
+        }
         target.textContent = `Created ${data.output_path} with ${data.total_chunks} chunks.`;
       } catch (error) {
         target.textContent = error.message;
@@ -725,6 +973,9 @@ def render_app_html() -> str:
 
     function focusPanel(id) {
       const panel = document.getElementById(id);
+      for (const item of document.querySelectorAll(".side-panel details.form-section")) {
+        item.open = item.id === id;
+      }
       panel.open = true;
       panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }

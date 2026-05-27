@@ -43,6 +43,8 @@ ChunkShare opens a dashboard in your browser immediately. From the dashboard, yo
 - Create `.mtorrent` metadata
 - Start seeding a complete file
 - Start leeching/downloading a file
+- Use `Select` and `Save As` buttons instead of manually typing long file paths
+- Stop, resume, and delete local jobs
 - View active torrents, seeders, leechers, peers, and chunk availability
 
 On Windows, you can also double-click:
@@ -97,6 +99,8 @@ Complete file path: sample_files/hello.txt
 Upload port: 9001
 ```
 
+For your own files, click `Select` beside `.mtorrent path` and `Complete file path`.
+
 Click `Start Seed`.
 
 ### 4. Leech From The Dashboard
@@ -110,6 +114,8 @@ Default sample values:
 Output file path: downloads/hello.txt
 Upload port: 9002
 ```
+
+For your own downloads, click `Select` beside `.mtorrent path` and `Save As` beside `Output file path`.
 
 Click `Start Leech`.
 
@@ -160,7 +166,15 @@ If the devices cannot connect, allow Python or `ChunkShare.exe` through Windows 
 
 After a leecher finishes downloading, it has the complete file and becomes a seeder if it stays online. So the next user can download chunks from the original seeder and from the previous leecher.
 
+Quick troubleshooting:
+
+- If the hub dashboard does not show the seeder, the seeder is not reaching the tracker URL.
+- If the hub shows the seeder and leecher but no chunks download, open `http://SEEDER_IP:SEEDER_PORT/health` from the leecher laptop.
+- If that health URL fails, check the seeder's `This peer IP`, upload port, and Windows Firewall.
+
 ## Build A Windows EXE
+
+Folder build:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build_exe.ps1
@@ -171,6 +185,22 @@ Output:
 ```text
 dist/ChunkShare/ChunkShare.exe
 ```
+
+Send the whole `dist/ChunkShare/` folder for this version.
+
+Single-file build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_onefile_exe.ps1
+```
+
+Output:
+
+```text
+dist/ChunkShare.exe
+```
+
+Send this one if you want to give classmates only one executable file.
 
 ## Documentation
 
@@ -184,3 +214,4 @@ dist/ChunkShare/ChunkShare.exe
 - `docs/07_TESTING_ACROSS_DEVICES.md` - practical LAN test guide
 - `docs/08_BUILDING_EXE.md` - how to build `ChunkShare.exe`
 - `docs/09_AI_HANDOFF_PROMPT.md` - handoff context for another AI assistant
+- `docs/10_CLASSMATE_HOW_TO.md` - step-by-step guide for classmates running the demo

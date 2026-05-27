@@ -386,6 +386,19 @@ def get_peers(tracker_url: str, file_hash: str) -> list[dict]:
 
 Explanation: Leechers call this before downloading chunks.
 
+### Function: `leave_tracker`
+
+Description: Removes a peer from the tracker when it stops.
+
+Block of code:
+
+```python
+def leave_tracker(tracker_url: str, file_hash: str, peer_id: str) -> dict:
+    """Tell the tracker that this peer is no longer sharing a file."""
+```
+
+Explanation: Stop and delete actions use this so the dashboard does not keep showing a peer that has already stopped.
+
 ## Directory/File: `mini_torrent/storage.py`
 
 ### Function/Class: `ChunkStorage`
@@ -751,6 +764,19 @@ def peers_for(self, file_hash: str) -> list[dict]:
 
 Explanation: Peers that stop announcing are removed after the timeout.
 
+### Function: `TrackerState.leave`
+
+Description: Removes one peer from one tracked file immediately.
+
+Block of code:
+
+```python
+def leave(self, file_hash: str, peer_id: str) -> bool:
+    """Remove one peer from one tracked file."""
+```
+
+Explanation: This supports the tracker `/leave` endpoint used by dashboard stop and delete controls.
+
 ### Function: `TrackerState.snapshot`
 
 Description: Builds dashboard-friendly tracker state.
@@ -843,14 +869,18 @@ Explanation: Leechers use `/peers` to discover uploaders. Browsers use `/dashboa
 
 ### Function: `TrackerRequestHandler.do_POST`
 
-Description: Handles `/announce`.
+Description: Handles `/announce` and `/leave`.
 
 Block of code:
 
 ```python
 def do_POST(self) -> None:
-    """Handle peer announce requests."""
-    if self.path != "/announce":
+    """Handle peer announce and leave requests."""
+    parsed = urlparse(self.path)
+    if parsed.path == "/leave":
+        self._handle_leave()
+        return
+    if parsed.path != "/announce":
         self._send_json(404, {"error": "not found"})
         return
     try:
@@ -865,7 +895,7 @@ def do_POST(self) -> None:
     self._send_json(200, {"ok": True})
 ```
 
-Explanation: Peers call this to register or refresh their chunk list.
+Explanation: Peers call `/announce` to register or refresh their chunk list. The app calls `/leave` when a job stops or is deleted.
 
 ### Function: `TrackerRequestHandler.log_message`
 
@@ -1062,9 +1092,11 @@ Block of code:
 ```python
 class PeerHttpServer(ThreadingHTTPServer):
     """HTTP server carrying one ChunkStorage instance."""
+
+    allow_reuse_address = True
 ```
 
-Explanation: The request handler uses this storage to answer chunk requests.
+Explanation: The request handler uses this storage to answer chunk requests. `allow_reuse_address` helps stopped jobs resume on the same upload port.
 
 ### Function: `PeerHttpServer.__init__`
 
@@ -1254,6 +1286,8 @@ def download_until_complete(
     listen_host: str,
     listen_port: int,
     max_rounds: int = 60,
+    stop_event: threading.Event | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> bool:
     """Download missing chunks from peers until the file is complete."""
     announce_to_tracker(
@@ -1319,7 +1353,7 @@ def download_until_complete(
     return storage.verify_complete_file()
 ```
 
-Explanation: The leecher repeatedly asks the tracker for peers, downloads missing chunks, verifies them through `ChunkStorage.write_chunk`, and announces progress after each successful chunk. Metadata is included in announces so the dashboard can show the file name, size, and chunk count.
+Explanation: The leecher repeatedly asks the tracker for peers, downloads missing chunks, verifies them through `ChunkStorage.write_chunk`, and announces progress after each successful chunk. `stop_event` lets the dashboard stop a download cleanly. `progress_callback` lets the dashboard show useful messages such as no peers found or peer unreachable.
 
 ## Directory/File: `mini_torrent/cli.py`
 
@@ -1444,6 +1478,25 @@ Explanation: This parses the command and runs the selected function.
 
 ## Directory/File: `app.py`
 
+### Function: `pick_local_path`
+
+Description: Opens a native file/save dialog and returns the selected local path.
+
+Block of code:
+
+```python
+def pick_local_path(
+    mode: str,
+    title: str,
+    initial_path: str = "",
+    default_extension: str = "",
+    filetypes: list[tuple[str, str]] | None = None,
+) -> str:
+    """Open a local file dialog and return the selected Windows path."""
+```
+
+Explanation: The dashboard runs in a browser, but normal browser file inputs hide full Windows paths. This helper lets the local Python app open a native dialog for source files, `.mtorrent` files, and save paths.
+
 ### Function/Class: `ManagedPeer`
 
 Description: Represents one local seeding or leeching job started from the dashboard.
@@ -1483,6 +1536,32 @@ def start_leeching(self) -> None:
 
 Explanation: The leecher downloads chunks in the background while the dashboard stays open.
 
+### Function: `ManagedPeer.stop`
+
+Description: Stops a local job, shuts down its upload server, and removes it from the tracker.
+
+Block of code:
+
+```python
+def stop(self) -> None:
+    """Stop this local job and remove it from the tracker."""
+```
+
+Explanation: This is used by the dashboard `Stop` and `Delete` controls. It does not delete the shared file or downloaded file from disk.
+
+### Function: `ManagedPeer.resume`
+
+Description: Restarts a stopped or incomplete local job.
+
+Block of code:
+
+```python
+def resume(self) -> None:
+    """Resume a stopped or incomplete local job."""
+```
+
+Explanation: Seeders resume by announcing again. Leechers resume by continuing from their existing progress file and downloaded chunks.
+
 ### Function/Class: `AppState`
 
 Description: Owns dashboard app state, local peers, and the local hub/tracker.
@@ -1512,6 +1591,54 @@ def snapshot(self) -> dict[str, Any]:
 ```
 
 Explanation: The browser calls `/api/status`, which uses this function to draw the torrent table, peer counts, and local jobs.
+
+### Function: `AppState.inspect_metadata`
+
+Description: Loads a `.mtorrent` file and returns values the dashboard can use.
+
+Block of code:
+
+```python
+def inspect_metadata(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Read a `.mtorrent` file and return useful dashboard defaults."""
+    meta = TorrentMeta.load(torrent_path)
+    return {
+        "ok": True,
+        "filename": meta.filename,
+        "default_output_path": str(Path("downloads") / meta.filename),
+    }
+```
+
+Explanation: When a user selects a `.mtorrent` file, the dashboard can automatically suggest `downloads/<filename>` for the leecher output path.
+
+### Function: `AppState.pick_path`
+
+Description: Chooses which native picker should open for a dashboard field.
+
+Block of code:
+
+```python
+def pick_path(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Open a native local file dialog for dashboard path fields."""
+    purpose = str(payload.get("purpose") or "file")
+    selected = pick_local_path(mode, title, initial_path, default_extension, filetypes)
+    return {"ok": True, "path": selected}
+```
+
+Explanation: This route supports `Select` and `Save As` buttons in the dashboard. It keeps the UI easier for demos because users do not need to manually type long Windows paths.
+
+### Function: `AppState.job_action`
+
+Description: Stops, resumes, or deletes a local dashboard job.
+
+Block of code:
+
+```python
+def job_action(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Stop, resume, or delete a local dashboard job."""
+```
+
+Explanation: This is what the toolbar `Stop`, `Resume`, and `Delete` buttons call. Delete removes the local job from the dashboard but does not remove the real file from disk.
 
 ### Function: `AppState.start_seed`
 
@@ -1558,7 +1685,7 @@ class AppRequestHandler(BaseHTTPRequestHandler):
     """HTTP handler for the ChunkShare dashboard app."""
 ```
 
-Explanation: It serves `/app`, `/api/status`, `/api/create-torrent`, `/api/seed`, and `/api/leech`.
+Explanation: It serves `/app`, `/api/status`, `/api/create-torrent`, `/api/inspect-torrent`, `/api/pick-path`, `/api/job-action`, `/api/seed`, and `/api/leech`.
 
 ### Function: `run_app`
 
@@ -1594,7 +1721,7 @@ def render_app_html() -> str:
     """
 ```
 
-Explanation: The dashboard looks like a torrent client: sidebar, toolbar, torrent table, detail panels, chunk bars, and seed/leech forms.
+Explanation: The dashboard looks like a torrent client: sidebar, toolbar, torrent table, detail panels, chunk bars, seed/leech forms, picker buttons for file paths, and stop/resume/delete controls for local jobs.
 
 ## Supporting Files
 

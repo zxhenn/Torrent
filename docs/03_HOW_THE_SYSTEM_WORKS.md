@@ -14,7 +14,7 @@ The tracker is like a directory. It does not hold the file. It only remembers wh
 
 ChunkShare opens an app dashboard first. The dashboard starts a local hub/tracker, reads tracker state, and shows active files, peers, seeders, leechers, and chunk availability.
 
-The dashboard also has controls to create metadata, start seeding, and start leeching. These controls still use the same underlying seeder and leecher logic.
+The dashboard also has controls to create metadata, start seeding, and start leeching. The `Select` and `Save As` buttons open native file dialogs so users do not need to type long Windows paths. These controls still use the same underlying seeder and leecher logic.
 
 A seeder starts with the full file. It checks that the file matches the `.mtorrent` metadata, then tells the tracker:
 

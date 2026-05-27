@@ -100,6 +100,20 @@ If the leecher stays online after download, it becomes another seeder. A third l
 
 ## Common Problems
 
+### Quick Troubleshooting Order
+
+Check the hub dashboard first.
+
+1. Start the seeder.
+2. Confirm the hub dashboard shows `Seeders: 1`.
+3. Start the leecher.
+4. Confirm the hub dashboard shows another peer or leecher.
+5. Watch the leecher's `Local Jobs` message.
+
+If the seeder does not appear, the seeder is not reaching the tracker.
+
+If the leecher appears but downloads nothing, the leecher can reach the tracker but probably cannot reach the seeder upload server.
+
 ### Peers Cannot Connect
 
 Allow Python or `ChunkShare.exe` through Windows Firewall.
@@ -116,6 +130,36 @@ Check that:
 - The seeder announced its own LAN IP, not `127.0.0.1`.
 - The `.mtorrent` file is the same on every laptop.
 - The seeder has the exact file described by the `.mtorrent` metadata.
+- The seeder upload port is open in Windows Firewall.
+- The leecher uses a different upload port if it is running on the same laptop.
+
+From the leecher laptop, open this in a browser:
+
+```text
+http://SEEDER_IP:SEEDER_UPLOAD_PORT/health
+```
+
+Example:
+
+```text
+http://192.168.1.154:9001/health
+```
+
+If it works, the browser shows JSON like:
+
+```json
+{"ok": true, "role": "peer"}
+```
+
+If it does not work, fix the seeder IP, seeder upload port, or firewall first.
+
+### Stop, Resume, And Delete During Testing
+
+- `Stop` pauses the selected local job and removes it from the tracker.
+- `Resume` starts a stopped job again.
+- `Delete` removes the selected local job from the dashboard.
+
+`Delete` does not delete the real shared file or downloaded file.
 
 ### `127.0.0.1` Does Not Work Across Devices
 
@@ -126,4 +170,3 @@ For LAN testing, use the real LAN IP, such as:
 ```text
 192.168.1.10
 ```
-

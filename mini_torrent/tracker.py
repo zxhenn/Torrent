@@ -48,6 +48,17 @@ class TrackerState:
             self._remove_stale_peers(peers, now)
             return [dict(peer) for peer in peers.values()]
 
+    def leave(self, file_hash: str, peer_id: str) -> bool:
+        """Remove one peer from one tracked file."""
+        with self._lock:
+            peers = self.files.get(file_hash)
+            if not peers or peer_id not in peers:
+                return False
+            peers.pop(peer_id, None)
+            if not peers:
+                self.files.pop(file_hash, None)
+            return True
+
     def snapshot(self) -> dict:
         """Return tracker state formatted for the dashboard."""
         now = time.time()
@@ -160,8 +171,12 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not found"})
 
     def do_POST(self) -> None:
-        """Handle peer announce requests."""
-        if self.path != "/announce":
+        """Handle peer announce and leave requests."""
+        parsed = urlparse(self.path)
+        if parsed.path == "/leave":
+            self._handle_leave()
+            return
+        if parsed.path != "/announce":
             self._send_json(404, {"error": "not found"})
             return
         try:
@@ -174,6 +189,19 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         self._send_json(200, {"ok": True})
+
+    def _handle_leave(self) -> None:
+        """Remove a peer entry when a local job stops."""
+        try:
+            payload = self._read_json()
+            for field in ("file_hash", "peer_id"):
+                if field not in payload:
+                    raise ValueError(f"{field} is required")
+            removed = self.state.leave(str(payload["file_hash"]), str(payload["peer_id"]))
+        except (json.JSONDecodeError, ValueError) as exc:
+            self._send_json(400, {"error": str(exc)})
+            return
+        self._send_json(200, {"ok": True, "removed": removed})
 
     def log_message(self, format: str, *args: object) -> None:
         """Print compact tracker logs."""

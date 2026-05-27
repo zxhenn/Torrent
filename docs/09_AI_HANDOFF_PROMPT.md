@@ -32,6 +32,8 @@ The expected experience is now:
 Open ChunkShare.exe
 Dashboard opens
 User can create metadata, seed, and leech from the dashboard
+User can use Select/Save As buttons for local file paths
+User can stop, resume, and delete local jobs from the dashboard
 Dashboard shows torrent-like rows, peers, seeders, leechers, and chunks
 ```
 
@@ -220,6 +222,8 @@ The project currently supports:
 - Starting a tracker/hub automatically
 - Starting a seeder from the dashboard
 - Starting a leecher from the dashboard
+- Selecting source files, `.mtorrent` files, and output paths through native dialogs
+- Stopping, resuming, and deleting local dashboard jobs
 - Uploading chunks from seeder to leecher
 - Verifying downloaded chunks
 - Verifying completed file hash
@@ -292,9 +296,6 @@ Important:
 
 Good next tasks:
 
-- Add browse file buttons or easier file path selection.
-- Add stop buttons for local seed/leech jobs.
-- Add clearer progress percentage per local job.
 - Add upload/download speed counters.
 - Add better error messages in the dashboard.
 - Add automatic peer port selection when a port is already used.
@@ -328,5 +329,5 @@ Avoid:
 If continuing from this handoff, say something like:
 
 ```text
-I understand ChunkShare is a simplified torrent-like distributed file sharing app. It now opens a dashboard first, starts a local hub/tracker, and lets users seed or leech from the dashboard. I will preserve the simple third-year-student-friendly architecture and focus on practical improvements like file browsing, better progress, stop controls, and LAN testing.
+I understand ChunkShare is a simplified torrent-like distributed file sharing app. It now opens a dashboard first, starts a local hub/tracker, lets users create metadata/seed/leech from the dashboard, and includes file pickers plus stop/resume/delete job controls. I will preserve the simple third-year-student-friendly architecture and focus on practical improvements like LAN troubleshooting, speed counters, clearer errors, and real-device testing.
 ```

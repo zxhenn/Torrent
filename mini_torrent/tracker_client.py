@@ -51,3 +51,20 @@ def get_peers(tracker_url: str, file_hash: str) -> list[dict]:
     query = urlencode({"file_hash": file_hash})
     data = _read_json_response(tracker_url.rstrip("/") + f"/peers?{query}")
     return list(data.get("peers", []))
+
+
+def leave_tracker(tracker_url: str, file_hash: str, peer_id: str) -> dict:
+    """Tell the tracker that this peer is no longer sharing a file."""
+    payload = json.dumps(
+        {
+            "file_hash": file_hash,
+            "peer_id": peer_id,
+        }
+    ).encode("utf-8")
+    request = Request(
+        tracker_url.rstrip("/") + "/leave",
+        data=payload,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    return _read_json_response(request)

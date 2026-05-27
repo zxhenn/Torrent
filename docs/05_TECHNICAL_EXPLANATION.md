@@ -36,7 +36,7 @@ If a downloaded chunk does not match the expected hash, the leecher rejects it.
 
 ### Chunking
 
-The file is divided into fixed-size chunks. The default chunk size is `256 KB`.
+The file is divided into fixed-size chunks. The code default is `256 KB`, while the dashboard starts with `1048576` bytes (`1 MiB`) because it is better for larger demo files.
 
 For example, if the file is `700 KB`, the chunks are:
 
@@ -62,6 +62,8 @@ The tracker does not upload the shared file. It only stores peer information:
 - Last update time
 
 The tracker can also serve a read-only browser dashboard at `/dashboard`. The main ChunkShare app uses a larger dashboard served by `app.py`.
+
+When a local job stops, the app calls the tracker `/leave` endpoint. This removes the peer immediately instead of waiting for the stale-peer timeout.
 
 ### Seeder
 
@@ -106,6 +108,8 @@ The dashboard can also start actions:
 - Create `.mtorrent` metadata
 - Start a seeder
 - Start a leecher
+- Open native file/save dialogs for local path selection
+- Stop, resume, and delete local dashboard jobs
 
 ### Dashboard App Server
 
@@ -116,10 +120,15 @@ The dashboard uses these local API routes:
 - `GET /app` shows the dashboard.
 - `GET /api/status` returns dashboard state.
 - `POST /api/create-torrent` creates metadata.
+- `POST /api/inspect-torrent` reads metadata and returns useful defaults.
+- `POST /api/pick-path` opens a native file or save dialog on the local computer.
+- `POST /api/job-action` stops, resumes, or deletes a local dashboard job.
 - `POST /api/seed` starts a local seeder.
 - `POST /api/leech` starts a local leecher.
 
 The app still uses distributed roles underneath. The dashboard only makes them easier to control.
+
+The picker API exists because browser file inputs do not expose full local Windows paths to JavaScript. ChunkShare is a local desktop-style web app, so `app.py` can safely open a native file dialog and return the chosen path to the dashboard.
 
 ### Executable Build
 

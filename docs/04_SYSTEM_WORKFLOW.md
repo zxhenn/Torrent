@@ -16,6 +16,18 @@ dist/ChunkShare/ChunkShare.exe
 
 The dashboard opens immediately in a browser. It can be empty at first. That is normal because no seeder or leecher has joined yet.
 
+The top toolbar is ordered like the action panel:
+
+```text
+Metadata -> Seed -> Leech
+```
+
+The toolbar also has local job controls:
+
+- `Stop` pauses the selected local seeding or leeching job and removes it from the tracker.
+- `Resume` starts the selected stopped job again.
+- `Delete` removes the selected local job from the dashboard. It does not delete the real file from disk.
+
 ## One-Laptop Demo
 
 ### 1. Open The App
@@ -44,6 +56,11 @@ Upload port: 9001
 
 Click `Start Seed`.
 
+For your own file, use the `Select` buttons instead of typing paths manually:
+
+- `Select` beside `.mtorrent path` chooses the metadata file.
+- `Select` beside `Complete file path` chooses the real complete file on the seeder laptop.
+
 ### 3. Download The Sample File
 
 In the right panel, open `Download File`.
@@ -57,6 +74,8 @@ Upload port: 9002
 ```
 
 Click `Start Leech`.
+
+For your own file, use the `Select` button beside `.mtorrent path`, then use `Save As` beside `Output file path` to choose where the downloaded file should be written.
 
 The dashboard should show:
 
@@ -115,6 +134,23 @@ On the laptop that will download:
 
 After downloading, the leecher becomes another seeder if it stays online.
 
+## Troubleshooting LAN Downloads
+
+Use the dashboard counts in this order:
+
+1. On the hub laptop, after starting the seeder, `Seeders` should become `1`.
+2. After starting the leecher, `Leechers` or `Peers` should increase.
+3. If the leecher appears but downloads nothing, check the leecher's `Local Jobs` message.
+
+Common checks:
+
+- The seeder and leecher must use the same hub tracker URL.
+- The tracker URL should be the hub laptop LAN IP, such as `http://192.168.1.154:8000`, not `127.0.0.1`.
+- `This peer IP` should be each device's own LAN IP.
+- If testing on one laptop, use different upload ports such as `9001` and `9002`.
+- If testing on two laptops, allow `ChunkShare.exe` or Python through Windows Firewall.
+- From the leecher laptop, open `http://SEEDER_IP:SEEDER_PORT/health` in a browser. If it does not show JSON, the leecher cannot reach the seeder's upload server.
+
 ## Creating Metadata
 
 Use the `Create Metadata` panel in the dashboard.
@@ -129,6 +165,13 @@ Output .mtorrent path: torrents/hello.txt.mtorrent
 
 Every device must use the same `.mtorrent` file for the same shared file.
 
+The dashboard has picker buttons:
+
+- `Select` beside `File to share` opens a file chooser.
+- `Save As` beside `Output .mtorrent path` chooses where to save the metadata.
+
+When metadata is created, the dashboard also fills the seed and leech `.mtorrent` fields with the newly created path.
+
 ## Build A Windows Executable
 
 ```powershell
@@ -142,4 +185,3 @@ dist/ChunkShare/ChunkShare.exe
 ```
 
 Share the whole `dist/ChunkShare/` folder for demos.
-

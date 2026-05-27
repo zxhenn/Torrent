@@ -12,6 +12,8 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add one-laptop demo script: `scripts/run_local_demo.ps1`.
 - [x] Add Windows EXE build script: `scripts/build_exe.ps1`.
 - [x] Add Windows EXE build shortcut: `build_exe.bat`.
+- [x] Add one-file EXE build script: `scripts/build_onefile_exe.ps1`.
+- [x] Add one-file EXE build shortcut: `build_onefile_exe.bat`.
 - [x] Add sample input folder: `sample_files/`.
 - [x] Add downloads folder: `downloads/`.
 - [x] Add torrent metadata folder: `torrents/`.
@@ -49,6 +51,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `/health` endpoint for simple checking.
 - [x] Add `/dashboard` browser dashboard.
 - [x] Add `/api/state` dashboard data endpoint.
+- [x] Add `/leave` endpoint so stopped peers disappear from the tracker.
 - [x] Expire stale peers after a timeout.
 - [x] Protect tracker peer table with a lock for threaded requests.
 - [ ] Save tracker state to a file or database.
@@ -63,6 +66,12 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add leech form.
 - [x] Add local jobs list.
 - [x] Show active torrents, peers, seeders, leechers, and chunks.
+- [x] Add native file picker buttons for choosing source files and `.mtorrent` files.
+- [x] Add native save path buttons for metadata output and downloaded files.
+- [x] Add metadata inspection so selecting a `.mtorrent` can fill useful download defaults.
+- [x] Reorder toolbar actions to `Metadata`, `Seed`, `Leech`.
+- [x] Add stop, resume, and delete controls for local jobs.
+- [x] Show local job messages for troubleshooting download problems.
 
 ## Seeder
 
@@ -71,6 +80,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Start peer server for uploading chunks.
 - [x] Announce all chunks to the tracker.
 - [x] Keep announcing while seeder is online.
+- [x] Let dashboard stop, resume, and delete seeder jobs.
 - [ ] Show upload count per chunk.
 - [ ] Add cleaner shutdown message with total chunks served.
 
@@ -84,7 +94,8 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Resume previously downloaded valid chunks.
 - [x] Verify whole file after all chunks are downloaded.
 - [x] Let leecher stay online as a seeder after download.
-- [ ] Add better progress display with percentage.
+- [x] Add better dashboard progress display with percentage and messages.
+- [x] Let dashboard stop, resume, and delete leecher jobs.
 - [ ] Add retry limit per chunk.
 - [ ] Add option to download chunks in random order.
 
@@ -110,11 +121,12 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `docs/07_TESTING_ACROSS_DEVICES.md`.
 - [x] Add `docs/08_BUILDING_EXE.md`.
 - [x] Add `docs/09_AI_HANDOFF_PROMPT.md`.
+- [x] Add `docs/10_CLASSMATE_HOW_TO.md`.
 - [x] Add this implementation task checklist.
 - [x] Document dashboard URL.
+- [x] Add troubleshooting section.
 - [ ] Add screenshots or terminal output examples.
 - [ ] Add final report-ready architecture diagram.
-- [ ] Add troubleshooting section.
 
 ## Testing
 
@@ -125,6 +137,10 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Test dashboard JSON state endpoint.
 - [x] Test app dashboard HTML endpoint.
 - [x] Test app seed API endpoint.
+- [x] Test dashboard picker buttons render in HTML.
+- [x] Test dashboard JavaScript syntax after picker changes.
+- [x] Test stop, resume, and delete job API.
+- [x] Test local seed/leech flow after job-control changes.
 - [ ] Add automated unit tests for hashing and metadata.
 - [ ] Add automated integration test for tracker, seeder, and leecher.
 - [ ] Test with a larger file.
@@ -135,6 +151,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [ ] Add multiple simultaneous chunk downloads.
 - [ ] Add peer blacklist for peers that send bad data.
 - [x] Add app-style dashboard GUI.
+- [x] Add browse file buttons or easier file path selection.
 - [ ] Add authentication or peer tokens.
 - [ ] Add persistent tracker storage.
 - [ ] Add configuration file for default ports and tracker URL.
