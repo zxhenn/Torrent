@@ -18,6 +18,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add full Docker Compose demo with tracker, seeder, and leechers.
 - [x] Add hybrid Docker Compose demo with host dashboard and Docker leecher.
 - [x] Add manual Docker Compose peer demo for optional seeder/leecher containers.
+- [x] Add separate Docker Compose files for leecher-only and seeder-only runs.
 - [x] Add sample input folder: `sample_files/`.
 - [x] Add downloads folder: `downloads/`.
 - [x] Add torrent metadata folder: `torrents/`.
@@ -76,6 +77,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Reorder toolbar actions to `Metadata`, `Seed`, `Leech`.
 - [x] Add stop, resume, and delete controls for local jobs.
 - [x] Show local job messages for troubleshooting download problems.
+- [x] Add Windows Firewall helper button for LAN testing.
 
 ## Seeder
 
@@ -100,6 +102,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Let leecher stay online as a seeder after download.
 - [x] Add better dashboard progress display with percentage and messages.
 - [x] Let dashboard stop, resume, and delete leecher jobs.
+- [x] Make tracker announce timeouts non-fatal during downloads.
 - [ ] Add retry limit per chunk.
 - [ ] Add option to download chunks in random order.
 
@@ -109,6 +112,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Allow leechers to upload chunks they already have.
 - [x] Keep file data transfer peer-to-peer instead of through the tracker.
 - [x] Add dashboard fields for LAN IP and tracker URL.
+- [x] Add dashboard firewall setup for Windows LAN demos.
 - [x] Add Docker demo that runs peers as separate containers.
 - [x] Add Docker manual peer mode for use with `ChunkShare.exe`.
 - [ ] Test on two or more laptops in the same LAN.

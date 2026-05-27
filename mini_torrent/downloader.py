@@ -39,17 +39,23 @@ def download_until_complete(
         if progress_callback:
             progress_callback(message)
 
-    announce_to_tracker(
-        tracker_url,
-        meta.file_hash,
-        peer_id,
-        listen_host,
-        listen_port,
-        storage.list_chunks(),
-        meta.filename,
-        meta.file_size,
-        meta.total_chunks,
-    )
+    def announce_progress() -> None:
+        try:
+            announce_to_tracker(
+                tracker_url,
+                meta.file_hash,
+                peer_id,
+                listen_host,
+                listen_port,
+                storage.list_chunks(),
+                meta.filename,
+                meta.file_size,
+                meta.total_chunks,
+            )
+        except (HTTPError, URLError, TimeoutError, OSError) as exc:
+            report(f"Tracker announce failed, continuing download: {exc}")
+
+    announce_progress()
 
     for round_number in range(1, max_rounds + 1):
         if stop_event and stop_event.is_set():
@@ -115,17 +121,7 @@ def download_until_complete(
                     )
                     print(message)
                     report(message)
-                    announce_to_tracker(
-                        tracker_url,
-                        meta.file_hash,
-                        peer_id,
-                        listen_host,
-                        listen_port,
-                        storage.list_chunks(),
-                        meta.filename,
-                        meta.file_size,
-                        meta.total_chunks,
-                    )
+                    announce_progress()
                     break
 
         if not made_progress:

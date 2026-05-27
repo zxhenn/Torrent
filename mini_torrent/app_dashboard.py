@@ -591,6 +591,9 @@ def render_app_html() -> str:
       <div class="hint">
         This dashboard opens first. Start seeding or leeching from the right panel.
       </div>
+      <div class="hint firewall-hint">
+        Across laptops: click Firewall once on the hub or seeder laptop if others time out.
+      </div>
     </aside>
 
     <main class="main">
@@ -603,6 +606,7 @@ def render_app_html() -> str:
         <button type="button" class="tool-button text" onclick="jobAction('resume')">Resume</button>
         <button type="button" class="tool-button text warning" onclick="jobAction('stop')">Stop</button>
         <button type="button" class="tool-button text danger" onclick="jobAction('delete')">Delete</button>
+        <button type="button" class="tool-button text" onclick="setupFirewall()">Firewall</button>
         <button type="button" class="tool-button text" onclick="copyTrackerUrl()">Copy URL</button>
         <span class="status-pill" id="hubStatus">Starting...</span>
       </header>
@@ -1094,6 +1098,19 @@ def render_app_html() -> str:
         document.getElementById("hubStatus").textContent = `Copied ${text}`;
       } catch {
         document.getElementById("hubStatus").textContent = text;
+      }
+    }
+
+    async function setupFirewall() {
+      const status = document.getElementById("hubStatus");
+      status.textContent = "Waiting for Windows Firewall permission...";
+      try {
+        const data = await requestJson("/api/setup-firewall", {});
+        status.textContent = data.message;
+        alert(data.message);
+      } catch (error) {
+        status.textContent = error.message;
+        alert(error.message);
       }
     }
 

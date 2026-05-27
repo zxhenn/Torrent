@@ -91,7 +91,8 @@ Fix:
 Other possible fixes:
 
 - Right-click the EXE, choose `Properties`, then check `Unblock` if Windows shows it.
-- Allow `ChunkShare.exe` through Windows Firewall.
+- Click the dashboard `Firewall` button and approve the Windows prompt for LAN testing.
+- Or manually allow `ChunkShare.exe` through Windows Firewall.
 - Keep the app window open while sharing or downloading.
 
 ## Important Notes

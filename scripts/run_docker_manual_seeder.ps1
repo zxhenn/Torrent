@@ -11,4 +11,4 @@ Write-Host "  Tracker URL: http://127.0.0.1:8000"
 Write-Host "The Docker seeder announces as 127.0.0.1:9011 by default."
 Write-Host ""
 
-& docker compose -f docker-compose.manual.yml up --build docker-seeder
+& docker compose -f docker-compose.seeder.yml up --build

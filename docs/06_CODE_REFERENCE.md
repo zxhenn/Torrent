@@ -21,11 +21,12 @@ DEFAULT_CHUNK_SIZE = 256 * 1024
 DEFAULT_TRACKER_HOST = "127.0.0.1"
 DEFAULT_TRACKER_PORT = 8000
 DEFAULT_TRACKER_URL = f"http://{DEFAULT_TRACKER_HOST}:{DEFAULT_TRACKER_PORT}"
-PEER_TTL_SECONDS = 120
+PEER_ANNOUNCE_INTERVAL_SECONDS = 15
+PEER_TTL_SECONDS = 45
 PROGRESS_SUFFIX = ".progress.json"
 ```
 
-Explanation: These constants keep repeated settings in one place. The chunk size is `256 KB`, the tracker defaults to localhost port `8000`, peer records expire after `120` seconds, and partial downloads use `.progress.json`.
+Explanation: These constants keep repeated settings in one place. The chunk size is `256 KB`, the tracker defaults to localhost port `8000`, CLI/Docker peers announce every `15` seconds, peer records expire after `45` seconds, and partial downloads use `.progress.json`.
 
 ## Directory/File: `mini_torrent/dashboard.py`
 
@@ -1385,11 +1386,12 @@ def add_peer_arguments(parser: argparse.ArgumentParser) -> None:
     """Add shared options used by seed and leech commands."""
     parser.add_argument("--tracker", default=DEFAULT_TRACKER_URL)
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--listen-host", default=None)
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--peer-id", help="Friendly peer name")
 ```
 
-Explanation: Seeders and leechers both need tracker address, host, port, and optional peer ID.
+Explanation: Seeders and leechers both need tracker address, announced host, listening host, port, and optional peer ID. This is useful for Docker because a peer can listen on one address but announce another address to the tracker.
 
 ### Function: `command_create_torrent`
 
@@ -1437,10 +1439,11 @@ def command_seed(args: argparse.Namespace) -> None:
     validate_file_against_metadata(args.file, meta)
     storage = ChunkStorage(meta, args.file, complete_source=True)
     peer_id = args.peer_id or f"seed-{uuid.uuid4().hex[:8]}"
-    server = start_peer_server(storage, args.host, args.port)
+    listen_host = args.listen_host or args.host
+    server = start_peer_server(storage, listen_host, args.port)
 ```
 
-Explanation: The full function validates the complete file, starts an upload server, and keeps announcing all chunks.
+Explanation: The full function validates the complete file, starts an upload server, keeps announcing all chunks, and sends a tracker leave request when it shuts down normally.
 
 ### Function: `command_leech`
 
@@ -1455,10 +1458,49 @@ def command_leech(args: argparse.Namespace) -> None:
     output = Path(args.output) if args.output else Path("downloads") / meta.filename
     storage = ChunkStorage(meta, output, complete_source=False)
     peer_id = args.peer_id or f"leech-{uuid.uuid4().hex[:8]}"
-    server = start_peer_server(storage, args.host, args.port)
+    listen_host = args.listen_host or args.host
+    server = start_peer_server(storage, listen_host, args.port)
 ```
 
-Explanation: The full function starts an upload server, downloads chunks, verifies the file, and optionally stays online as a seeder.
+Explanation: The full function starts an upload server, downloads chunks, verifies the file, optionally stays online as a seeder, and sends a tracker leave request when it shuts down normally.
+
+### Function: `leave_tracker_quietly`
+
+Description: Removes a CLI/Docker peer from the tracker during shutdown.
+
+Block of code:
+
+```python
+def leave_tracker_quietly(tracker_url: str, file_hash: str, peer_id: str) -> None:
+    """Ask the tracker to remove this peer without crashing during shutdown."""
+    try:
+        leave_tracker(tracker_url, file_hash, peer_id)
+        print("Left tracker.")
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        print(f"Could not leave tracker cleanly: {exc}")
+```
+
+Explanation: Docker peers used to stay visible until the tracker timeout if they were stopped from Docker. This helper lets them remove themselves cleanly.
+
+### Function: `install_shutdown_signal_handler`
+
+Description: Makes Docker stop signals run normal cleanup code.
+
+Block of code:
+
+```python
+def install_shutdown_signal_handler() -> None:
+    """Turn Docker stop signals into normal cleanup flow."""
+    def raise_keyboard_interrupt(signum: int, frame: object) -> None:
+        raise KeyboardInterrupt
+
+    try:
+        signal.signal(signal.SIGTERM, raise_keyboard_interrupt)
+    except (AttributeError, ValueError):
+        pass
+```
+
+Explanation: `docker compose down` sends a stop signal. This handler turns that into the same cleanup path as pressing `Ctrl+C`.
 
 ### Function: `main`
 
@@ -1469,12 +1511,13 @@ Block of code:
 ```python
 def main() -> None:
     """Program entry point."""
+    install_shutdown_signal_handler()
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)
 ```
 
-Explanation: This parses the command and runs the selected function.
+Explanation: This installs shutdown cleanup, parses the command, and runs the selected function.
 
 ## Directory/File: `app.py`
 
@@ -1585,12 +1628,77 @@ def snapshot(self) -> dict[str, Any]:
         "ok": True,
         "lan_ip": self.lan_ip,
         "tracker_url": self.tracker_url,
+        "firewall": firewall_summary(),
         "tracker": TrackerRequestHandler.state.snapshot(),
         "local_peers": peers,
     }
 ```
 
-Explanation: The browser calls `/api/status`, which uses this function to draw the torrent table, peer counts, and local jobs.
+Explanation: The browser calls `/api/status`, which uses this function to draw the torrent table, peer counts, local jobs, and firewall helper status.
+
+## Directory/File: `mini_torrent/firewall.py`
+
+### Function: `firewall_summary`
+
+Description: Returns firewall setup information for the dashboard.
+
+Block of code:
+
+```python
+def firewall_summary() -> dict:
+    """Return dashboard-friendly firewall setup information."""
+    return {
+        "supported": os.name == "nt",
+        "requires_admin": True,
+        "tracker_ports": TRACKER_PORT_RANGE,
+        "peer_ports": PEER_PORT_RANGE,
+        "profile": FIREWALL_PROFILE,
+    }
+```
+
+Explanation: The dashboard uses this to explain that automatic firewall setup is available on Windows and which ports ChunkShare uses.
+
+### Function: `request_windows_firewall_rules`
+
+Description: Opens a Windows admin prompt and adds inbound firewall rules.
+
+Block of code:
+
+```python
+def request_windows_firewall_rules() -> dict:
+    """Ask Windows for admin permission and add ChunkShare inbound TCP rules."""
+    encoded_script = _encode_powershell(_firewall_rule_script())
+    launch_command = (
+        "$process = Start-Process -FilePath powershell "
+        "-ArgumentList "
+        f"'-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded_script}' "
+        "-Verb RunAs -WindowStyle Hidden -PassThru -Wait; "
+        "exit $process.ExitCode"
+    )
+```
+
+Explanation: This is called by the dashboard `Firewall` button. Windows still asks the user for admin permission. If the user approves, the app adds inbound rules for tracker ports `8000-8099` and peer ports `9000-9100`.
+
+### Function: `_firewall_rule_script`
+
+Description: Builds the elevated PowerShell script used to add firewall rules.
+
+Block of code:
+
+```python
+def _firewall_rule_script() -> str:
+    """Return the elevated PowerShell script that creates firewall rules."""
+    return f"""
+$rules = @(
+    @{{ Name = "ChunkShare Tracker TCP"; Ports = "{TRACKER_PORT_RANGE}" }},
+    @{{ Name = "ChunkShare Peer TCP"; Ports = "{PEER_PORT_RANGE}" }}
+)
+"""
+```
+
+Explanation: The script recreates two simple inbound TCP rules so other laptops can reach the tracker and peer upload servers during a LAN demo.
+
+## Directory/File: `app.py`
 
 ### Function: `AppState.inspect_metadata`
 
@@ -1640,6 +1748,20 @@ def job_action(self, payload: dict[str, Any]) -> dict[str, Any]:
 
 Explanation: This is what the toolbar `Stop`, `Resume`, and `Delete` buttons call. Delete removes the local job from the dashboard but does not remove the real file from disk.
 
+### Function: `AppState.setup_firewall`
+
+Description: Handles the dashboard firewall setup button.
+
+Block of code:
+
+```python
+def setup_firewall(self, payload: dict[str, Any]) -> dict[str, Any]:
+    """Ask Windows to allow ChunkShare tracker and peer ports."""
+    return request_windows_firewall_rules()
+```
+
+Explanation: This route asks Windows for admin permission and creates the inbound firewall rules used for two-laptop demos.
+
 ### Function: `AppState.start_seed`
 
 Description: Starts a local seeder from dashboard input.
@@ -1685,7 +1807,7 @@ class AppRequestHandler(BaseHTTPRequestHandler):
     """HTTP handler for the ChunkShare dashboard app."""
 ```
 
-Explanation: It serves `/app`, `/api/status`, `/api/create-torrent`, `/api/inspect-torrent`, `/api/pick-path`, `/api/job-action`, `/api/seed`, and `/api/leech`.
+Explanation: It serves `/app`, `/api/status`, `/api/create-torrent`, `/api/inspect-torrent`, `/api/pick-path`, `/api/job-action`, `/api/setup-firewall`, `/api/seed`, and `/api/leech`.
 
 ### Function: `run_app`
 
@@ -1721,7 +1843,7 @@ def render_app_html() -> str:
     """
 ```
 
-Explanation: The dashboard looks like a torrent client: sidebar, toolbar, torrent table, detail panels, chunk bars, seed/leech forms, picker buttons for file paths, and stop/resume/delete controls for local jobs.
+Explanation: The dashboard looks like a torrent client: sidebar, toolbar, torrent table, detail panels, chunk bars, seed/leech forms, picker buttons for file paths, firewall helper button, and stop/resume/delete controls for local jobs.
 
 ## Supporting Files
 

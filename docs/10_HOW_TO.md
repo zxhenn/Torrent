@@ -38,6 +38,16 @@ Everyone uses the same `Tracker URL`.
 
 Each laptop uses its own `This peer IP`.
 
+Every ChunkShare app opens its own tracker automatically, but a demo should choose only one tracker as the hub.
+
+Example:
+
+- Laptop A is the hub/tracker.
+- Laptop B also opens ChunkShare, but it should ignore its own tracker URL.
+- Laptop B should still type Laptop A's tracker URL.
+
+If each laptop uses its own tracker URL, each laptop only announces to itself and the peers will not find each other.
+
 Example:
 
 ```text
@@ -82,6 +92,8 @@ http://192.168.1.154:8000
 ```
 
 Send this tracker URL to every seeder and leecher.
+
+Other laptops may show their own tracker URL too. Do not use those for the same demo swarm unless you intentionally want a separate swarm.
 
 ## Role 2: Seeder Laptop
 
@@ -145,6 +157,23 @@ Leecher2: 9003
 
 All of them still use the same `Tracker URL`.
 
+## Phone Hotspot Without Internet
+
+Yes, this can work with a phone hotspot even if the phone has no internet.
+
+The hotspot only needs to make a local network between the two laptops. ChunkShare does not need an outside server because:
+
+- The hub/tracker runs on one laptop.
+- The seeder upload server runs on one laptop.
+- The leecher connects directly to those local IP addresses.
+
+Use the hotspot IPs shown by each laptop. Keep the same rule:
+
+- Everyone uses the hub laptop's `Tracker URL`.
+- Each laptop uses its own `This peer IP`.
+
+If the hotspot has a setting like client isolation, device isolation, or guest mode, turn it off. That setting blocks laptops from talking to each other.
+
 ## One-Laptop Docker Demo
 
 If you do not have a second device, or if the class requires Docker, use Docker to simulate peers on the same laptop:
@@ -161,9 +190,18 @@ If you still want to use `ChunkShare.exe`, use the manual Docker peer mode from 
 - `Resume` resumes the selected local job.
 - `Stop` stops the selected local job.
 - `Delete` removes the selected local job from the dashboard.
+- `Firewall` asks Windows for permission to allow ChunkShare LAN ports.
 - `Copy URL` copies the tracker URL.
 
 `Delete` does not delete the real file from disk.
+
+Click `Firewall` on the hub/seeder laptop if other laptops get URL timeout. Windows should show an admin permission prompt. Approve it to allow tracker ports `8000-8099` and peer upload ports `9000-9100`.
+
+## Why A Peer May Stay Visible For A Bit
+
+When a peer stops normally, ChunkShare tells the tracker to remove it.
+
+If Docker is force-stopped, a laptop sleeps, the app crashes, or the network drops, the tracker may not receive that remove message. In that case, the peer disappears automatically after the stale-peer timeout.
 
 ## Quick Troubleshooting
 
@@ -205,6 +243,45 @@ http://HUB_IP:8000/health
 ```
 
 If this fails, the leecher cannot reach the hub/tracker.
+
+### Works On Same Laptop But Not Other Laptop
+
+This usually means the tracker is running locally, but the network is blocking other laptops.
+
+On the hub laptop, test local tracker health:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+Then on the other laptop, test the hub tracker:
+
+```text
+http://HUB_IP:8000/health
+```
+
+If local works but the other laptop times out, check:
+
+- Rebuild `ChunkShare.exe` if you recently changed code.
+- Click the dashboard `Firewall` button on the hub laptop and approve the Windows prompt.
+- Allow `ChunkShare.exe` through Windows Firewall on the hub laptop.
+- Set the Wi-Fi/hotspot network profile to `Private`.
+- Make sure both laptops are on the same hotspot/router.
+- Make sure the hotspot does not use client isolation, device isolation, or guest mode.
+
+PowerShell port test from the other laptop:
+
+```powershell
+Test-NetConnection HUB_IP -Port 8000
+```
+
+PowerShell listener check on the hub laptop:
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 -State Listen
+```
+
+The hub should be listening on `0.0.0.0:8000` or the hub's LAN IP. If it only listens on `127.0.0.1:8000`, the other laptop cannot reach it.
 
 Then test the seeder upload server from the leecher laptop browser:
 

@@ -55,6 +55,15 @@ docker compose -f docker-compose.full.yml down
 
 Use this when you want to keep using `ChunkShare.exe` and only make Docker act as one peer.
 
+Use these separate files:
+
+```text
+docker-compose.leecher.yml  -> Docker only leeches
+docker-compose.seeder.yml   -> Docker only seeds
+```
+
+`docker-compose.manual.yml` still exists as a combined backup, but the separate files are easier to understand.
+
 ### EXE Seeder, Docker Leecher
 
 1. Open `ChunkShare.exe`.
@@ -70,7 +79,7 @@ Upload port: 9001
 4. Run:
 
 ```powershell
-docker compose -f docker-compose.manual.yml up --build docker-leecher
+docker compose -f docker-compose.leecher.yml up --build
 ```
 
 Docker downloads to:
@@ -85,7 +94,7 @@ downloads/hello-docker-manual.txt
 2. Run:
 
 ```powershell
-docker compose -f docker-compose.manual.yml up --build docker-seeder
+docker compose -f docker-compose.seeder.yml up --build
 ```
 
 3. In the EXE dashboard, start a leech with:
@@ -105,7 +114,8 @@ The Docker seeder announces as:
 Stop manual Docker peer:
 
 ```powershell
-docker compose -f docker-compose.manual.yml down
+docker compose -f docker-compose.leecher.yml down
+docker compose -f docker-compose.seeder.yml down
 ```
 
 ## Option C: Host Dashboard Plus Docker Leecher
@@ -163,6 +173,8 @@ Stop old containers:
 
 ```powershell
 docker compose -f docker-compose.full.yml down
+docker compose -f docker-compose.leecher.yml down
+docker compose -f docker-compose.seeder.yml down
 docker compose -f docker-compose.manual.yml down
 docker compose -f docker-compose.demo.yml down
 ```
@@ -180,6 +192,16 @@ That is why Docker leecher uses the host tracker:
 ```text
 http://host.docker.internal:8000
 ```
+
+### Docker Leecher Timed Out After Downloading Some Chunks
+
+If the leecher already downloaded many chunks and then exits with `urlopen error timed out`, run the leecher again:
+
+```powershell
+docker compose -f docker-compose.leecher.yml up --build
+```
+
+ChunkShare saves progress in a `.progress.json` file, so it should resume from the chunks already downloaded.
 
 ### Clean Download Files
 

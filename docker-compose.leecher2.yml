@@ -1,0 +1,25 @@
+services:
+  docker-leecher-2:
+    build: .
+    command:
+      - leech
+      - ${TORRENT_PATH:-torrents/Type To Continue.zip.mtorrent}
+      - --output
+      - ${DOCKER_LEECH_OUTPUT:-downloads/leecher/Type To Continue.zip}
+      - --tracker
+      - ${TRACKER_URL:-http://192.168.1.154:8000}
+      - --host
+      - ${DOCKER_LEECH_ANNOUNCE_HOST:-host.docker.internal}
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - ${DOCKER_LEECH_PORT:-9023}
+      - --peer-id
+      - ${DOCKER_LEECH_PEER_ID:-docker-leecher-2}
+    ports:
+      - "${DOCKER_LEECH_PORT:-9023}:${DOCKER_LEECH_PORT:-9023}"
+    volumes:
+      - ./downloads:/app/downloads
+      - ./torrents:/app/torrents:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

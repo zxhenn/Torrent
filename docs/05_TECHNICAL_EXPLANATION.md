@@ -63,7 +63,9 @@ The tracker does not upload the shared file. It only stores peer information:
 
 The tracker can also serve a read-only browser dashboard at `/dashboard`. The main ChunkShare app uses a larger dashboard served by `app.py`.
 
-When a local job stops, the app calls the tracker `/leave` endpoint. This removes the peer immediately instead of waiting for the stale-peer timeout.
+When a local job stops, the app calls the tracker `/leave` endpoint. CLI and Docker peers also call `/leave` during normal shutdown. This removes the peer immediately instead of waiting for the stale-peer timeout.
+
+If a peer crashes or is forced closed before it can leave, the tracker still removes it automatically after the peer timeout.
 
 ### Seeder
 
@@ -110,6 +112,7 @@ The dashboard can also start actions:
 - Start a leecher
 - Open native file/save dialogs for local path selection
 - Stop, resume, and delete local dashboard jobs
+- Ask Windows for firewall permission for LAN testing
 
 ### Dashboard App Server
 
@@ -123,12 +126,15 @@ The dashboard uses these local API routes:
 - `POST /api/inspect-torrent` reads metadata and returns useful defaults.
 - `POST /api/pick-path` opens a native file or save dialog on the local computer.
 - `POST /api/job-action` stops, resumes, or deletes a local dashboard job.
+- `POST /api/setup-firewall` asks Windows for admin permission and adds Private-network inbound rules for ChunkShare ports.
 - `POST /api/seed` starts a local seeder.
 - `POST /api/leech` starts a local leecher.
 
 The app still uses distributed roles underneath. The dashboard only makes them easier to control.
 
 The picker API exists because browser file inputs do not expose full local Windows paths to JavaScript. ChunkShare is a local desktop-style web app, so `app.py` can safely open a native file dialog and return the chosen path to the dashboard.
+
+The firewall API exists for Windows LAN demos. It does not silently change the firewall. When the user clicks `Firewall`, Windows shows an admin permission prompt. If approved, ChunkShare adds inbound TCP rules for tracker ports `8000-8099` and peer upload ports `9000-9100`. The rules use the `Any` network profile so class demos still work when Windows marks a hotspot as Public.
 
 ### Executable Build
 
@@ -156,5 +162,7 @@ The main Windows dashboard is not the best thing to put fully inside Docker beca
 - Chunks are verified before being saved.
 - Final file hash is verified after download.
 - Partial progress is saved in a sidecar `.progress.json` file.
-- Peer entries expire from the tracker after a timeout.
+- CLI and Docker peers announce their status every `15` seconds.
+- Peer entries expire from the tracker after `45` seconds if they stop announcing.
+- Peers send a tracker leave request during normal stop/delete/shutdown.
 - Failed peer requests are skipped so the leecher can try another peer.

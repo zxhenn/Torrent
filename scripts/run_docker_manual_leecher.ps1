@@ -12,4 +12,4 @@ Write-Host "  This peer IP: host.docker.internal"
 Write-Host "  Upload port: 9001"
 Write-Host ""
 
-& docker compose -f docker-compose.manual.yml up --build docker-leecher
+& docker compose -f docker-compose.leecher.yml up --build

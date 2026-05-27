@@ -1,0 +1,25 @@
+services:
+  docker-seeder:
+    build: .
+    command:
+      - seed
+      - ${TORRENT_PATH:-torrents/hello.txt.mtorrent}
+      - --file
+      - ${SEED_FILE:-sample_files/hello.txt}
+      - --tracker
+      - ${TRACKER_URL:-http://host.docker.internal:8000}
+      - --host
+      - ${DOCKER_SEED_ANNOUNCE_HOST:-127.0.0.1}
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - ${DOCKER_SEED_PORT:-9011}
+      - --peer-id
+      - ${DOCKER_SEED_PEER_ID:-docker-seeder-manual}
+    ports:
+      - "${DOCKER_SEED_PORT:-9011}:${DOCKER_SEED_PORT:-9011}"
+    volumes:
+      - ./sample_files:/app/sample_files:ro
+      - ./torrents:/app/torrents:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

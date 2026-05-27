@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import argparse
+import signal
 import time
 import uuid
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
-from .constants import DEFAULT_CHUNK_SIZE, DEFAULT_TRACKER_URL
+from .constants import (
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_TRACKER_URL,
+    PEER_ANNOUNCE_INTERVAL_SECONDS,
+)
 from .downloader import download_until_complete
 from .metadata import TorrentMeta, create_torrent, validate_file_against_metadata
 from .peer_server import start_peer_server
 from .storage import ChunkStorage
 from .tracker import run_tracker
-from .tracker_client import announce_to_tracker
+from .tracker_client import announce_to_tracker, leave_tracker
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -114,22 +120,26 @@ def command_seed(args: argparse.Namespace) -> None:
     )
     try:
         while True:
-            announce_to_tracker(
-                args.tracker,
-                meta.file_hash,
-                peer_id,
-                args.host,
-                args.port,
-                storage.list_chunks(),
-                meta.filename,
-                meta.file_size,
-                meta.total_chunks,
-            )
-            print(f"Announced {len(storage.list_chunks())} chunks to tracker")
-            time.sleep(30)
+            try:
+                announce_to_tracker(
+                    args.tracker,
+                    meta.file_hash,
+                    peer_id,
+                    args.host,
+                    args.port,
+                    storage.list_chunks(),
+                    meta.filename,
+                    meta.file_size,
+                    meta.total_chunks,
+                )
+                print(f"Announced {len(storage.list_chunks())} chunks to tracker")
+            except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                print(f"Tracker announce failed, still seeding: {exc}")
+            time.sleep(PEER_ANNOUNCE_INTERVAL_SECONDS)
     except KeyboardInterrupt:
         print("\nSeeder stopped.")
     finally:
+        leave_tracker_quietly(args.tracker, meta.file_hash, peer_id)
         server.shutdown()
         server.server_close()
 
@@ -173,27 +183,52 @@ def command_leech(args: argparse.Namespace) -> None:
 
         print("Now seeding downloaded chunks. Press Ctrl+C to stop.")
         while True:
-            announce_to_tracker(
-                args.tracker,
-                meta.file_hash,
-                peer_id,
-                args.host,
-                args.port,
-                storage.list_chunks(),
-                meta.filename,
-                meta.file_size,
-                meta.total_chunks,
-            )
-            time.sleep(30)
+            try:
+                announce_to_tracker(
+                    args.tracker,
+                    meta.file_hash,
+                    peer_id,
+                    args.host,
+                    args.port,
+                    storage.list_chunks(),
+                    meta.filename,
+                    meta.file_size,
+                    meta.total_chunks,
+                )
+            except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                print(f"Tracker announce failed, still seeding: {exc}")
+            time.sleep(PEER_ANNOUNCE_INTERVAL_SECONDS)
     except KeyboardInterrupt:
         print("\nLeecher stopped.")
     finally:
+        leave_tracker_quietly(args.tracker, meta.file_hash, peer_id)
         server.shutdown()
         server.server_close()
 
 
+def leave_tracker_quietly(tracker_url: str, file_hash: str, peer_id: str) -> None:
+    """Ask the tracker to remove this peer without crashing during shutdown."""
+    try:
+        leave_tracker(tracker_url, file_hash, peer_id)
+        print("Left tracker.")
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        print(f"Could not leave tracker cleanly: {exc}")
+
+
+def install_shutdown_signal_handler() -> None:
+    """Turn Docker stop signals into normal cleanup flow."""
+    def raise_keyboard_interrupt(signum: int, frame: object) -> None:
+        raise KeyboardInterrupt
+
+    try:
+        signal.signal(signal.SIGTERM, raise_keyboard_interrupt)
+    except (AttributeError, ValueError):
+        pass
+
+
 def main() -> None:
     """Program entry point."""
+    install_shutdown_signal_handler()
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)

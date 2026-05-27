@@ -190,11 +190,11 @@ http://localhost:18000/dashboard
 
 If you want to keep the Windows app dashboard and run only one Docker leecher, use `docker-compose.demo.yml`.
 
-If you want manual control with `ChunkShare.exe`, use `docker-compose.manual.yml`:
+If you want manual control with `ChunkShare.exe`, use the separate seeder/leecher Compose files:
 
 ```powershell
-docker compose -f docker-compose.manual.yml up --build docker-leecher
-docker compose -f docker-compose.manual.yml up --build docker-seeder
+docker compose -f docker-compose.leecher.yml up --build
+docker compose -f docker-compose.seeder.yml up --build
 ```
 
 See [docs/11_DOCKER_DEMO.md](docs/11_DOCKER_DEMO.md).

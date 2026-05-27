@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 from mini_torrent.app_dashboard import render_app_html
 from mini_torrent.constants import DEFAULT_CHUNK_SIZE
 from mini_torrent.downloader import download_until_complete
+from mini_torrent.firewall import firewall_summary, request_windows_firewall_rules
 from mini_torrent.metadata import TorrentMeta, create_torrent, validate_file_against_metadata
 from mini_torrent.peer_server import start_peer_server
 from mini_torrent.storage import ChunkStorage
@@ -312,6 +313,7 @@ class AppState:
             "app_url": f"http://127.0.0.1:{self.app_port}",
             "tracker_url": self.tracker_url,
             "local_tracker_url": self.local_tracker_url,
+            "firewall": firewall_summary(),
             "tracker": TrackerRequestHandler.state.snapshot(),
             "local_peers": peers,
         }
@@ -458,6 +460,10 @@ class AppState:
             "message": peer.message,
         }
 
+    def setup_firewall(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Ask Windows to allow ChunkShare tracker and peer ports."""
+        return request_windows_firewall_rules()
+
     def _remove_existing_peer(self, peer_id: str) -> None:
         """Stop and remove a same-name peer before replacing it."""
         with self.lock:
@@ -498,6 +504,7 @@ class AppRequestHandler(BaseHTTPRequestHandler):
             "/api/inspect-torrent": self.state.inspect_metadata,
             "/api/pick-path": self.state.pick_path,
             "/api/job-action": self.state.job_action,
+            "/api/setup-firewall": self.state.setup_firewall,
             "/api/seed": self.state.start_seed,
             "/api/leech": self.state.start_leech,
         }

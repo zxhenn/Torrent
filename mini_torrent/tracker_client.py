@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
-def _read_json_response(request: Request | str, timeout: float = 5.0) -> dict:
+def _read_json_response(request: Request | str, timeout: float = 10.0) -> dict:
     """Open a URL request and decode the JSON response."""
     with urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))

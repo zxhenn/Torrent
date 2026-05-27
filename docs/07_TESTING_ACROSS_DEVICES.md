@@ -116,7 +116,9 @@ If the leecher appears but downloads nothing, the leecher can reach the tracker 
 
 ### Peers Cannot Connect
 
-Allow Python or `ChunkShare.exe` through Windows Firewall.
+Click the dashboard `Firewall` button on the hub or seeder laptop and approve the Windows admin prompt.
+
+If that is not available, manually allow Python or `ChunkShare.exe` through Windows Firewall.
 
 ### Dashboard Opens But No Peers Show
 
