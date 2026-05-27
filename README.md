@@ -243,3 +243,4 @@ Send this one if you want to give classmates only one executable file.
 - `docs/09_AI_HANDOFF_PROMPT.md` - handoff context for another AI assistant
 - `docs/10_HOW_TO.md` - step-by-step guide for classmates running the demo
 - `docs/11_DOCKER_DEMO.md` - Docker-based demo instructions
+- `docs/12_SYSTEM_REVIEWER.md` - reviewer-style explanation of the whole system and every important file

@@ -133,6 +133,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `docs/09_AI_HANDOFF_PROMPT.md`.
 - [x] Add `docs/10_HOW_TO.md`.
 - [x] Add `docs/11_DOCKER_DEMO.md`.
+- [x] Add `docs/12_SYSTEM_REVIEWER.md`.
 - [x] Add this implementation task checklist.
 - [x] Document dashboard URL.
 - [x] Add troubleshooting section.
