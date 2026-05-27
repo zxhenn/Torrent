@@ -174,7 +174,28 @@ Quick troubleshooting:
 
 ## One-Laptop Docker Demo
 
-If you do not have a second device, you can simulate a leecher in Docker while keeping the app dashboard on the host.
+If your class requires Docker, run the full Docker demo:
+
+```powershell
+docker compose -f docker-compose.full.yml up --build
+```
+
+This starts a tracker, seeder, and two leechers as separate containers.
+
+Open:
+
+```text
+http://localhost:18000/dashboard
+```
+
+If you want to keep the Windows app dashboard and run only one Docker leecher, use `docker-compose.demo.yml`.
+
+If you want manual control with `ChunkShare.exe`, use `docker-compose.manual.yml`:
+
+```powershell
+docker compose -f docker-compose.manual.yml up --build docker-leecher
+docker compose -f docker-compose.manual.yml up --build docker-seeder
+```
 
 See [docs/11_DOCKER_DEMO.md](docs/11_DOCKER_DEMO.md).
 
@@ -220,4 +241,5 @@ Send this one if you want to give classmates only one executable file.
 - `docs/07_TESTING_ACROSS_DEVICES.md` - practical LAN test guide
 - `docs/08_BUILDING_EXE.md` - how to build `ChunkShare.exe`
 - `docs/09_AI_HANDOFF_PROMPT.md` - handoff context for another AI assistant
-- `docs/10_CLASSMATE_HOW_TO.md` - step-by-step guide for classmates running the demo
+- `docs/10_HOW_TO.md` - step-by-step guide for classmates running the demo
+- `docs/11_DOCKER_DEMO.md` - Docker-based demo instructions

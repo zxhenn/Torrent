@@ -14,6 +14,10 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add Windows EXE build shortcut: `build_exe.bat`.
 - [x] Add one-file EXE build script: `scripts/build_onefile_exe.ps1`.
 - [x] Add one-file EXE build shortcut: `build_onefile_exe.bat`.
+- [x] Add Dockerfile for container-based demos.
+- [x] Add full Docker Compose demo with tracker, seeder, and leechers.
+- [x] Add hybrid Docker Compose demo with host dashboard and Docker leecher.
+- [x] Add manual Docker Compose peer demo for optional seeder/leecher containers.
 - [x] Add sample input folder: `sample_files/`.
 - [x] Add downloads folder: `downloads/`.
 - [x] Add torrent metadata folder: `torrents/`.
@@ -105,6 +109,8 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Allow leechers to upload chunks they already have.
 - [x] Keep file data transfer peer-to-peer instead of through the tracker.
 - [x] Add dashboard fields for LAN IP and tracker URL.
+- [x] Add Docker demo that runs peers as separate containers.
+- [x] Add Docker manual peer mode for use with `ChunkShare.exe`.
 - [ ] Test on two or more laptops in the same LAN.
 - [ ] Document LAN IP setup with screenshots.
 - [ ] Add a demo script for localhost testing.
@@ -121,7 +127,8 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `docs/07_TESTING_ACROSS_DEVICES.md`.
 - [x] Add `docs/08_BUILDING_EXE.md`.
 - [x] Add `docs/09_AI_HANDOFF_PROMPT.md`.
-- [x] Add `docs/10_CLASSMATE_HOW_TO.md`.
+- [x] Add `docs/10_HOW_TO.md`.
+- [x] Add `docs/11_DOCKER_DEMO.md`.
 - [x] Add this implementation task checklist.
 - [x] Document dashboard URL.
 - [x] Add troubleshooting section.

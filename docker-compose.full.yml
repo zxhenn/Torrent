@@ -1,0 +1,102 @@
+services:
+  tracker:
+    build: .
+    command:
+      - tracker
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    ports:
+      - "18000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  seeder:
+    build: .
+    command:
+      - seed
+      - torrents/hello.txt.mtorrent
+      - --file
+      - sample_files/hello.txt
+      - --tracker
+      - http://tracker:8000
+      - --host
+      - seeder
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - "9001"
+      - --peer-id
+      - docker-seeder
+    depends_on:
+      tracker:
+        condition: service_healthy
+    ports:
+      - "19001:9001"
+    volumes:
+      - ./sample_files:/app/sample_files:ro
+      - ./torrents:/app/torrents:ro
+
+  leecher1:
+    build: .
+    command:
+      - leech
+      - torrents/hello.txt.mtorrent
+      - --output
+      - downloads/hello-docker-1.txt
+      - --tracker
+      - http://tracker:8000
+      - --host
+      - leecher1
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - "9002"
+      - --peer-id
+      - docker-leecher-1
+    depends_on:
+      tracker:
+        condition: service_healthy
+      seeder:
+        condition: service_started
+    ports:
+      - "19002:9002"
+    volumes:
+      - ./downloads:/app/downloads
+      - ./torrents:/app/torrents:ro
+
+  leecher2:
+    build: .
+    command:
+      - leech
+      - torrents/hello.txt.mtorrent
+      - --output
+      - downloads/hello-docker-2.txt
+      - --tracker
+      - http://tracker:8000
+      - --host
+      - leecher2
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - "9003"
+      - --peer-id
+      - docker-leecher-2
+    depends_on:
+      tracker:
+        condition: service_healthy
+      seeder:
+        condition: service_started
+    ports:
+      - "19003:9003"
+    volumes:
+      - ./downloads:/app/downloads
+      - ./torrents:/app/torrents:ro

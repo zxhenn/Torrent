@@ -136,6 +136,21 @@ The project can be packaged into `ChunkShare.exe` with PyInstaller.
 
 The executable is easier to run during demos, but it does not change the system design. It opens the same dashboard app and still exchanges chunks peer-to-peer.
 
+### Docker Demo
+
+Docker is used as a demo environment for the distributed roles.
+
+The full Docker demo runs separate containers for:
+
+- Tracker
+- Seeder
+- Leecher 1
+- Leecher 2
+
+The containers communicate through Docker's internal network using service names such as `tracker`, `seeder`, and `leecher1`. This proves that the system is not just one process pretending to do every role.
+
+The main Windows dashboard is not the best thing to put fully inside Docker because it uses local file picker dialogs. For Docker demos, the tracker dashboard at `/dashboard` is enough to observe the swarm.
+
 ## Robustness Choices
 
 - Chunks are verified before being saved.

@@ -145,6 +145,14 @@ Leecher2: 9003
 
 All of them still use the same `Tracker URL`.
 
+## One-Laptop Docker Demo
+
+If you do not have a second device, or if the class requires Docker, use Docker to simulate peers on the same laptop:
+
+- See [11_DOCKER_DEMO.md](11_DOCKER_DEMO.md).
+
+If you still want to use `ChunkShare.exe`, use the manual Docker peer mode from that guide. It lets Docker act as only one seeder or only one leecher.
+
 ## Dashboard Buttons
 
 - `Metadata` opens the metadata creation form.
@@ -197,12 +205,6 @@ http://HUB_IP:8000/health
 ```
 
 If this fails, the leecher cannot reach the hub/tracker.
-
-## One-Laptop Docker Demo
-
-If you do not have a second device, use Docker to simulate a leecher on the same laptop:
-
-- See [docs/11_DOCKER_DEMO.md](docs/11_DOCKER_DEMO.md).
 
 Then test the seeder upload server from the leecher laptop browser:
 
@@ -257,4 +259,4 @@ Check:
 8. Keep all laptops open after download.
 9. Show that completed leechers become seeders.
 
-St
+Start with a small file first. After the small demo works, test with a bigger ZIP.

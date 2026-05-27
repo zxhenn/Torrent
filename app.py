@@ -127,12 +127,13 @@ class ManagedPeer:
         self.stop_event = threading.Event()
         self.server: Any | None = None
         self.thread: threading.Thread | None = None
+        self.listen_host = "0.0.0.0"
         self._start_server()
 
     def _start_server(self) -> None:
         """Start this peer's upload server if it is not already running."""
         if self.server is None:
-            self.server = start_peer_server(self.storage, self.host, self.port)
+            self.server = start_peer_server(self.storage, self.listen_host, self.port)
 
     def start_seeding(self) -> None:
         """Start the peer announce loop in a background thread."""
@@ -255,6 +256,7 @@ class ManagedPeer:
             "role": self.role,
             "peer_id": self.peer_id,
             "host": self.host,
+            "listen_host": self.listen_host,
             "port": self.port,
             "tracker_url": self.tracker_url,
             "filename": self.meta.filename,

@@ -1,74 +1,195 @@
-# 11 - Docker Demo (Extra Peer On One Laptop)
+# 11 - Docker Demo
 
-This guide runs the ChunkShare app on the host and a leecher inside Docker to simulate a second device.
+Docker is used to run ChunkShare peers as separate containers.
 
-## Requirements
+Best proof for class:
 
-- Windows with Docker Desktop running
-- Python 3.10+ on the host (for the app dashboard)
+```text
+tracker container
+seeder container
+leecher1 container
+leecher2 container
+```
 
-## Step 1: Start the app on the host
+The main `ChunkShare.exe` dashboard is still best for manual app demos. Docker is best for proving the distributed roles.
 
-From the project folder:
+## Option A: Full Docker Demo
+
+Use this when the professor asks for Docker.
+
+Start:
+
+```powershell
+docker compose -f docker-compose.full.yml up --build
+```
+
+Open:
+
+```text
+http://localhost:18000/dashboard
+```
+
+This automatically runs:
+
+```text
+tracker   -> internal 8000, browser 18000
+seeder    -> internal 9001, host test 19001
+leecher1  -> internal 9002, host test 19002
+leecher2  -> internal 9003, host test 19003
+```
+
+Downloaded files appear in:
+
+```text
+downloads/hello-docker-1.txt
+downloads/hello-docker-2.txt
+```
+
+Stop:
+
+```powershell
+docker compose -f docker-compose.full.yml down
+```
+
+## Option B: Manual Docker Peer With ChunkShare.exe
+
+Use this when you want to keep using `ChunkShare.exe` and only make Docker act as one peer.
+
+### EXE Seeder, Docker Leecher
+
+1. Open `ChunkShare.exe`.
+2. Start a seed in the dashboard.
+3. Use:
+
+```text
+Tracker URL: http://127.0.0.1:8000
+This peer IP: host.docker.internal
+Upload port: 9001
+```
+
+4. Run:
+
+```powershell
+docker compose -f docker-compose.manual.yml up --build docker-leecher
+```
+
+Docker downloads to:
+
+```text
+downloads/hello-docker-manual.txt
+```
+
+### Docker Seeder, EXE Leecher
+
+1. Open `ChunkShare.exe`.
+2. Run:
+
+```powershell
+docker compose -f docker-compose.manual.yml up --build docker-seeder
+```
+
+3. In the EXE dashboard, start a leech with:
+
+```text
+Tracker URL: http://127.0.0.1:8000
+This peer IP: 127.0.0.1
+Upload port: 9002
+```
+
+The Docker seeder announces as:
+
+```text
+127.0.0.1:9011
+```
+
+Stop manual Docker peer:
+
+```powershell
+docker compose -f docker-compose.manual.yml down
+```
+
+## Option C: Host Dashboard Plus Docker Leecher
+
+This is the older hybrid demo.
+
+1. Run:
 
 ```powershell
 python app.py
 ```
 
-The dashboard opens in your browser.
-
-## Step 2: Start the seeder in the dashboard
-
-Use the right-side `Seed Complete File` panel with the sample file:
+2. Seed in the dashboard with:
 
 ```text
-.mtorrent path: torrents/hello.txt.mtorrent
-Complete file path: sample_files/hello.txt
+Tracker URL: http://127.0.0.1:8000
+This peer IP: host.docker.internal
 Upload port: 9001
 ```
 
-Important for Docker:
-
-- Set `This peer IP` to `host.docker.internal`
-- Keep `Tracker URL` as shown by the dashboard (usually `http://127.0.0.1:8000`)
-
-Click `Start Seed`.
-
-## Step 3: Run the Docker leecher
-
-In a new PowerShell window, run:
+3. Run:
 
 ```powershell
 docker compose -f docker-compose.demo.yml up --build
 ```
 
-Or use the one-click script:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_docker_demo.ps1
-```
-
-This starts a leecher container that:
-
-- Reads `torrents/hello.txt.mtorrent`
-- Downloads to `downloads/hello-docker.txt`
-- Connects to the host tracker at `http://host.docker.internal:8000`
-- Stays online and keeps seeding after download
-
-## Verify
-
-- The host dashboard shows a leecher peer.
-- The file appears at `downloads/hello-docker.txt` on the host.
-
-## Stop
-
-Press `Ctrl+C` in the Docker terminal, then:
+Stop:
 
 ```powershell
 docker compose -f docker-compose.demo.yml down
 ```
 
-## Notes
+## Useful Scripts
 
-- This setup is intended for one-laptop demos only.
-- If you want multiple real devices, use the normal LAN steps in the main guide.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_docker_full_demo.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_docker_manual_leecher.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_docker_manual_seeder.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_docker_demo.ps1
+```
+
+## Common Problems
+
+### Docker Desktop Is Not Running
+
+Open Docker Desktop first, then test:
+
+```powershell
+docker ps
+```
+
+### Port Already In Use
+
+Stop old containers:
+
+```powershell
+docker compose -f docker-compose.full.yml down
+docker compose -f docker-compose.manual.yml down
+docker compose -f docker-compose.demo.yml down
+```
+
+### Docker Cannot Reach The Windows App
+
+Use:
+
+```text
+host.docker.internal
+```
+
+That is why Docker leecher uses the host tracker:
+
+```text
+http://host.docker.internal:8000
+```
+
+### Clean Download Files
+
+Delete old Docker outputs if you want a fresh test:
+
+```text
+downloads/hello-docker-1.txt
+downloads/hello-docker-2.txt
+downloads/hello-docker-manual.txt
+downloads/hello-docker.txt
+```
+
+You can also delete matching `.progress.json` files.
