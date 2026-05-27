@@ -109,6 +109,7 @@ This checklist tracks what has been implemented and what still needs to be impro
 - [x] Add `docs/06_CODE_REFERENCE.md`.
 - [x] Add `docs/07_TESTING_ACROSS_DEVICES.md`.
 - [x] Add `docs/08_BUILDING_EXE.md`.
+- [x] Add `docs/09_AI_HANDOFF_PROMPT.md`.
 - [x] Add this implementation task checklist.
 - [x] Document dashboard URL.
 - [ ] Add screenshots or terminal output examples.

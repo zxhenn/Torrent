@@ -183,3 +183,4 @@ dist/ChunkShare/ChunkShare.exe
 - `docs/06_CODE_REFERENCE.md` - file-by-file and function-by-function explanation
 - `docs/07_TESTING_ACROSS_DEVICES.md` - practical LAN test guide
 - `docs/08_BUILDING_EXE.md` - how to build `ChunkShare.exe`
+- `docs/09_AI_HANDOFF_PROMPT.md` - handoff context for another AI assistant

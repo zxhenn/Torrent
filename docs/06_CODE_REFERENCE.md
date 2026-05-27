@@ -1870,3 +1870,19 @@ dist/ChunkShare/ChunkShare.exe
 ```
 
 Explanation: This helps teammates run the project without typing Python commands, as long as the executable has been built first.
+
+### Directory/File: `docs/09_AI_HANDOFF_PROMPT.md`
+
+Function: AI continuation guide.
+
+Description: Gives another AI assistant the project goal, architecture, current behavior, run commands, and next tasks.
+
+Block of code:
+
+```text
+Open ChunkShare.exe
+Dashboard opens
+User can create metadata, seed, and leech from the dashboard
+```
+
+Explanation: This should be given to another AI if it needs to continue the project without the full conversation history.
