@@ -1,3 +1,4 @@
+# This file runs the tracker that keeps track of peers and their chunks.
 """HTTP tracker server for ChunkShare.
 
 The tracker does not store files. It only stores which peer claims to have
@@ -16,14 +17,17 @@ from .constants import DEFAULT_TRACKER_HOST, DEFAULT_TRACKER_PORT, PEER_TTL_SECO
 from .dashboard import format_bytes, render_dashboard_html
 
 
+# This class stores which peers have which chunks.
 class TrackerState:
     """In-memory table of files, peers, and available chunks."""
 
+    # This method creates an empty tracker table.
     def __init__(self) -> None:
         """Create an empty tracker state."""
         self.files: dict[str, dict[str, dict]] = {}
         self._lock = threading.Lock()
 
+    # This method adds or updates a peer's chunk list.
     def announce(self, peer: dict) -> None:
         """Add or update one peer entry."""
         file_hash = str(peer["file_hash"])
@@ -40,6 +44,7 @@ class TrackerState:
                 "updated_at": time.time(),
             }
 
+    # This method returns live peers for one file.
     def peers_for(self, file_hash: str) -> list[dict]:
         """Return live peers for a file hash and remove stale entries."""
         now = time.time()
@@ -48,6 +53,7 @@ class TrackerState:
             self._remove_stale_peers(peers, now)
             return [dict(peer) for peer in peers.values()]
 
+    # This method removes a peer when it stops sharing.
     def leave(self, file_hash: str, peer_id: str) -> bool:
         """Remove one peer from one tracked file."""
         with self._lock:
@@ -59,6 +65,7 @@ class TrackerState:
                 self.files.pop(file_hash, None)
             return True
 
+    # This method builds a dashboard-friendly snapshot of all torrents.
     def snapshot(self) -> dict:
         """Return tracker state formatted for the dashboard."""
         now = time.time()
@@ -132,6 +139,7 @@ class TrackerState:
         torrents.sort(key=lambda torrent: torrent["filename"].lower())
         return {"ok": True, "torrents": torrents, "updated_at": int(now)}
 
+    # This method removes peers that have not announced recently.
     def _remove_stale_peers(self, peers: dict[str, dict], now: float) -> None:
         """Remove peer entries that have stopped announcing."""
         stale_peer_ids = [
@@ -143,11 +151,13 @@ class TrackerState:
             peers.pop(peer_id, None)
 
 
+# This class handles HTTP requests sent to the tracker.
 class TrackerRequestHandler(BaseHTTPRequestHandler):
     """HTTP request handler for tracker endpoints."""
 
     state = TrackerState()
 
+    # This method handles tracker pages, health checks, state, and peer lookups.
     def do_GET(self) -> None:
         """Handle dashboard, health, state, and peer list requests."""
         parsed = urlparse(self.path)
@@ -170,6 +180,7 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json(404, {"error": "not found"})
 
+    # This method handles peer announce and leave requests.
     def do_POST(self) -> None:
         """Handle peer announce and leave requests."""
         parsed = urlparse(self.path)
@@ -190,6 +201,7 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json(200, {"ok": True})
 
+    # This method removes a peer from the tracker.
     def _handle_leave(self) -> None:
         """Remove a peer entry when a local job stops."""
         try:
@@ -203,15 +215,18 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json(200, {"ok": True, "removed": removed})
 
+    # This method prints shorter tracker log messages.
     def log_message(self, format: str, *args: object) -> None:
         """Print compact tracker logs."""
         print(f"[tracker] {self.address_string()} - {format % args}")
 
+    # This method reads JSON from an HTTP request body.
     def _read_json(self) -> dict:
         """Read a JSON request body."""
         length = int(self.headers.get("Content-Length", "0"))
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
+    # This method sends a JSON response to the client.
     def _send_json(self, status: int, payload: dict) -> None:
         """Send a JSON response."""
         body = json.dumps(payload).encode("utf-8")
@@ -221,6 +236,7 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    # This method sends an HTML response to the browser.
     def _send_html(self, status: int, body_text: str) -> None:
         """Send an HTML response."""
         body = body_text.encode("utf-8")
@@ -231,6 +247,7 @@ class TrackerRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+# This function runs the tracker server until the user stops it.
 def run_tracker(
     host: str = DEFAULT_TRACKER_HOST,
     port: int = DEFAULT_TRACKER_PORT,
@@ -247,6 +264,7 @@ def run_tracker(
         server.server_close()
 
 
+# This function creates a tracker server without starting it.
 def create_tracker_server(
     host: str = DEFAULT_TRACKER_HOST,
     port: int = DEFAULT_TRACKER_PORT,
@@ -255,6 +273,7 @@ def create_tracker_server(
     return ThreadingHTTPServer((host, port), TrackerRequestHandler)
 
 
+# This function starts the tracker server in the background.
 def start_tracker_server(
     host: str = DEFAULT_TRACKER_HOST,
     port: int = DEFAULT_TRACKER_PORT,
@@ -266,6 +285,7 @@ def start_tracker_server(
     return server
 
 
+# This function converts a value to an integer when possible.
 def _optional_int(value: object) -> int | None:
     """Convert a value to int, or return None when it is missing."""
     if value is None:
@@ -276,6 +296,7 @@ def _optional_int(value: object) -> int | None:
         return None
 
 
+# This function finds the first integer value in peer data.
 def _first_int(peers: list[dict], key: str) -> int | None:
     """Return the first integer value found in peer metadata."""
     for peer in peers:
@@ -285,6 +306,7 @@ def _first_int(peers: list[dict], key: str) -> int | None:
     return None
 
 
+# This function finds the first non-empty text value in peer data.
 def _first_text(peers: list[dict], key: str, default: str) -> str:
     """Return the first non-empty string value found in peer metadata."""
     for peer in peers:

@@ -1,3 +1,4 @@
+# This file hashes files and splits them into chunks.
 """Hashing and chunk-reading helpers.
 
 This file keeps the low-level file hashing logic in one place so the
@@ -11,11 +12,13 @@ from pathlib import Path
 from typing import Iterator
 
 
+# This function hashes a small chunk of bytes.
 def sha256_bytes(data: bytes) -> str:
     """Return the SHA-256 hex digest of a byte string."""
     return hashlib.sha256(data).hexdigest()
 
 
+# This function hashes an entire file.
 def sha256_file(path: str | Path, read_size: int = 1024 * 1024) -> str:
     """Return the SHA-256 hex digest of a whole file."""
     digest = hashlib.sha256()
@@ -28,6 +31,7 @@ def sha256_file(path: str | Path, read_size: int = 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+# This function reads a file piece by piece.
 def iter_file_chunks(path: str | Path, chunk_size: int) -> Iterator[tuple[int, bytes]]:
     """Yield file chunks as ``(chunk_index, bytes)`` pairs."""
     index = 0
@@ -40,9 +44,9 @@ def iter_file_chunks(path: str | Path, chunk_size: int) -> Iterator[tuple[int, b
             index += 1
 
 
+# This function counts how many chunks a file needs.
 def chunk_count(file_size: int, chunk_size: int) -> int:
     """Return how many chunks are needed for a file size."""
     if file_size == 0:
         return 0
     return (file_size + chunk_size - 1) // chunk_size
-

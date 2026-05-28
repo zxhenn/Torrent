@@ -1,3 +1,4 @@
+# This file stores shared default settings like ports, chunk size, and timeouts.
 """Shared default values used by the ChunkShare system."""
 
 DEFAULT_CHUNK_SIZE = 256 * 1024

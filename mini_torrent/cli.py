@@ -1,3 +1,4 @@
+# This file defines the command line commands for creating, seeding, leeching, and tracking torrents.
 """Command line interface for the ChunkShare system."""
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from .tracker import run_tracker
 from .tracker_client import announce_to_tracker, leave_tracker
 
 
+# This function builds the command line menu and its subcommands.
 def build_parser() -> argparse.ArgumentParser:
     """Create the command parser and subcommands."""
     parser = argparse.ArgumentParser(
@@ -73,6 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# This function adds options shared by seed and leech commands.
 def add_peer_arguments(parser: argparse.ArgumentParser) -> None:
     """Add shared options used by seed and leech commands."""
     parser.add_argument("--tracker", default=DEFAULT_TRACKER_URL)
@@ -86,6 +89,7 @@ def add_peer_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--peer-id", help="Friendly peer name")
 
 
+# This function creates a .mtorrent metadata file from a real file.
 def command_create_torrent(args: argparse.Namespace) -> None:
     """Create metadata for a file and save it to disk."""
     meta = create_torrent(args.file, args.chunk_size)
@@ -96,11 +100,13 @@ def command_create_torrent(args: argparse.Namespace) -> None:
     print(f"Chunks: {meta.total_chunks}")
 
 
+# This function starts the tracker server from the CLI.
 def command_tracker(args: argparse.Namespace) -> None:
     """Run the tracker server."""
     run_tracker(args.host, args.port)
 
 
+# This function starts a seeder that shares a complete file.
 def command_seed(args: argparse.Namespace) -> None:
     """Run a peer that has the complete file."""
     meta = TorrentMeta.load(args.torrent)
@@ -144,6 +150,7 @@ def command_seed(args: argparse.Namespace) -> None:
         server.server_close()
 
 
+# This function starts a leecher that downloads a file from peers.
 def command_leech(args: argparse.Namespace) -> None:
     """Run a peer that downloads missing chunks and then seeds them."""
     meta = TorrentMeta.load(args.torrent)
@@ -206,6 +213,7 @@ def command_leech(args: argparse.Namespace) -> None:
         server.server_close()
 
 
+# This function removes a peer from the tracker during shutdown.
 def leave_tracker_quietly(tracker_url: str, file_hash: str, peer_id: str) -> None:
     """Ask the tracker to remove this peer without crashing during shutdown."""
     try:
@@ -215,8 +223,10 @@ def leave_tracker_quietly(tracker_url: str, file_hash: str, peer_id: str) -> Non
         print(f"Could not leave tracker cleanly: {exc}")
 
 
+# This function makes shutdown signals clean up like Ctrl+C.
 def install_shutdown_signal_handler() -> None:
     """Turn Docker stop signals into normal cleanup flow."""
+    # This helper turns a system signal into a normal KeyboardInterrupt.
     def raise_keyboard_interrupt(signum: int, frame: object) -> None:
         raise KeyboardInterrupt
 
@@ -226,6 +236,7 @@ def install_shutdown_signal_handler() -> None:
         pass
 
 
+# This function is the main entry point for the CLI program.
 def main() -> None:
     """Program entry point."""
     install_shutdown_signal_handler()

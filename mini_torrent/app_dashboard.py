@@ -1,8 +1,10 @@
+# This file builds the main app dashboard HTML shown in the browser.
 """Dashboard page for the ChunkShare desktop-style app."""
 
 from __future__ import annotations
 
 
+# This function returns the main ChunkShare app dashboard page.
 def render_app_html() -> str:
     """Return the ChunkShare app dashboard page."""
     return """<!doctype html>

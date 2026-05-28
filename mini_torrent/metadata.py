@@ -1,3 +1,4 @@
+# This file creates, saves, loads, and checks torrent metadata for shared files.
 """Torrent metadata creation, loading, saving, and validation."""
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ from .constants import DEFAULT_CHUNK_SIZE
 from .hashing import chunk_count, iter_file_chunks, sha256_bytes, sha256_file
 
 
+# This class stores the metadata needed to share one file.
 @dataclass(frozen=True)
 class TorrentMeta:
     """Data needed to download and verify one shared file."""
@@ -20,15 +22,18 @@ class TorrentMeta:
     file_hash: str
     chunk_hashes: list[str]
 
+    # This property tells how many chunks the file has.
     @property
     def total_chunks(self) -> int:
         """Return the expected number of chunks."""
         return len(self.chunk_hashes)
 
+    # This method turns the metadata into a dictionary.
     def to_dict(self) -> dict:
         """Convert metadata to a JSON-friendly dictionary."""
         return asdict(self)
 
+    # This method rebuilds metadata from a dictionary and checks it.
     @classmethod
     def from_dict(cls, data: dict) -> "TorrentMeta":
         """Create metadata from a dictionary and validate basic fields."""
@@ -50,12 +55,14 @@ class TorrentMeta:
             )
         return meta
 
+    # This method loads metadata from a .mtorrent file.
     @classmethod
     def load(cls, path: str | Path) -> "TorrentMeta":
         """Load a ``.mtorrent`` metadata file."""
         with Path(path).open("r", encoding="utf-8") as file:
             return cls.from_dict(json.load(file))
 
+    # This method saves metadata into a .mtorrent file.
     def save(self, path: str | Path) -> None:
         """Save metadata to a ``.mtorrent`` JSON file."""
         output = Path(path)
@@ -65,6 +72,7 @@ class TorrentMeta:
             file.write("\n")
 
 
+# This function creates torrent metadata from a local file.
 def create_torrent(
     file_path: str | Path,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
@@ -88,6 +96,7 @@ def create_torrent(
     )
 
 
+# This function checks if a local file matches its torrent metadata.
 def validate_file_against_metadata(file_path: str | Path, meta: TorrentMeta) -> None:
     """Raise an error if a local file does not match torrent metadata."""
     path = Path(file_path)
@@ -97,4 +106,3 @@ def validate_file_against_metadata(file_path: str | Path, meta: TorrentMeta) -> 
         raise ValueError("File size does not match torrent metadata")
     if sha256_file(path) != meta.file_hash:
         raise ValueError("File hash does not match torrent metadata")
-

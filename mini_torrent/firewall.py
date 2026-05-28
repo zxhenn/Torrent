@@ -1,3 +1,4 @@
+# This file helps open Windows Firewall ports for tracker and peer connections.
 """Windows Firewall helpers for ChunkShare LAN demos."""
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ PEER_PORT_RANGE = "9000-9100"
 FIREWALL_PROFILE = "Any"
 
 
+# This function returns firewall information for the dashboard.
 def firewall_summary() -> dict:
     """Return dashboard-friendly firewall setup information."""
     return {
@@ -27,6 +29,7 @@ def firewall_summary() -> dict:
     }
 
 
+# This function asks Windows to add firewall rules for ChunkShare.
 def request_windows_firewall_rules() -> dict:
     """Ask Windows for admin permission and add ChunkShare inbound TCP rules."""
     if os.name != "nt":
@@ -87,11 +90,13 @@ def request_windows_firewall_rules() -> dict:
     }
 
 
+# This function encodes a PowerShell script so Windows can run it safely.
 def _encode_powershell(script: str) -> str:
     """Encode a PowerShell script for the -EncodedCommand argument."""
     return base64.b64encode(script.encode("utf-16le")).decode("ascii")
 
 
+# This function builds the PowerShell commands that create firewall rules.
 def _firewall_rule_script() -> str:
     """Return the elevated PowerShell script that creates firewall rules."""
     return f"""

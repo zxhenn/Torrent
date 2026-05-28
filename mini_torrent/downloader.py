@@ -1,3 +1,4 @@
+# This file downloads missing chunks from peers until the file is complete.
 """Leecher download logic."""
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from .storage import ChunkStorage
 from .tracker_client import announce_to_tracker, get_peers
 
 
+# This function downloads one chunk from one peer.
 def request_chunk(peer: dict, meta: TorrentMeta, index: int, timeout: float = 5.0) -> bytes:
     """Download one chunk from one peer."""
     query = urlencode({"file_hash": meta.file_hash, "index": index})
@@ -23,6 +25,7 @@ def request_chunk(peer: dict, meta: TorrentMeta, index: int, timeout: float = 5.
         return response.read()
 
 
+# This function keeps downloading chunks until the file is complete or it gives up.
 def download_until_complete(
     meta: TorrentMeta,
     storage: ChunkStorage,
@@ -35,10 +38,12 @@ def download_until_complete(
     progress_callback: Callable[[str], None] | None = None,
 ) -> bool:
     """Download missing chunks from peers until the file is complete."""
+    # This helper sends progress messages to the dashboard or CLI.
     def report(message: str) -> None:
         if progress_callback:
             progress_callback(message)
 
+    # This helper updates the tracker with the chunks we currently have.
     def announce_progress() -> None:
         try:
             announce_to_tracker(

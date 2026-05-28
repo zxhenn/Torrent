@@ -1,8 +1,10 @@
+# This file builds the tracker dashboard HTML shown in the browser.
 """HTML dashboard for the tracker."""
 
 from __future__ import annotations
 
 
+# This function converts bytes into a readable size like KB or MB.
 def format_bytes(size: int | None) -> str:
     """Convert a byte count into a short human-readable label."""
     if size is None:
@@ -18,6 +20,7 @@ def format_bytes(size: int | None) -> str:
     return f"{value:.1f} {units[unit_index]}"
 
 
+# This function returns the tracker dashboard page.
 def render_dashboard_html() -> str:
     """Return the tracker dashboard page."""
     return """<!doctype html>
